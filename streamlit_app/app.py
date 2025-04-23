@@ -184,19 +184,39 @@ if prompt := st.chat_input("What can I help you with?"):
                 stream=True
             )
 
-            # Use st.write_stream to display the chunks and get the full response
-            full_response = st.write_stream(response_stream)
+            # Define a generator function to yield only the text parts from chunks
+            def text_chunk_generator(stream):
+                """Yields text from stream chunks, handling potential errors."""
+                for chunk in stream:
+                    try:
+                        # Access the text part of the chunk
+                        # Make sure chunk.text exists and handle potential errors if not
+                        if hasattr(chunk, 'text'):
+                             yield chunk.text
+                        # You might need to inspect the exact chunk structure if text isn't directly available
+                        # print(chunk) # Uncomment temporarily ONLY for debugging chunk structure
+                    except Exception as e:
+                         # Handle cases where a chunk might not have text or is malformed
+                         # st.warning(f"Skipping chunk due to error: {e}") # Optional warning
+                         pass # Silently skip chunks without text or causing errors
 
+            # Use st.write_stream with the text-only generator
+            full_response_text = st.write_stream(text_chunk_generator(response_stream))
+            # --- !!! KEY CHANGE END !!! ---
 
         except Exception as e:
-            st.error(f"An error occurred: {e}")
-            full_response = f"Sorry, I encountered an error: {e}"
-            message_placeholder.markdown(full_response) # Show error in placeholder
+            error_message = f"An error occurred: {e}"
+            st.error(error_message)
+            full_response_text = error_message # Store error as the response for logging/history
+            # Ensure the error is displayed if st.write_stream failed
+            message_placeholder.markdown(error_message)
 
-    # 3. Add assistant response (full) to chat history and log it
+
+    # 3. Add assistant response (full text) to chat history and log it
     timestamp_assistant = datetime.datetime.now().isoformat()
-    log_message_to_csv(timestamp_assistant, "assistant", full_response)
-    st.session_state.messages.append({"role": "assistant", "content": full_response})
+    log_message_to_csv(timestamp_assistant, "assistant", full_response_text)
+    # Make sure we only add the final text string to the session state
+    st.session_state.messages.append({"role": "assistant", "content": full_response_text})
 
     # (Optional) Rerun if needed, though Streamlit usually handles reruns on widget interaction
     # st.rerun()
