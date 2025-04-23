@@ -128,7 +128,7 @@ if prompt := st.chat_input("What can I help you with?"):
     # 1. Log and display user message
     timestamp_user = datetime.datetime.now().isoformat()
     # No need to log here if we log after potential modification/sending
-    # log_message_to_csv(timestamp_user, "user", prompt) # Optional: log raw input immediately
+    log_message_to_csv(timestamp_user, "user", prompt) # Optional: log raw input immediately
 
     # Add user message to session state
     st.session_state.messages.append({"role": "user", "content": prompt})
