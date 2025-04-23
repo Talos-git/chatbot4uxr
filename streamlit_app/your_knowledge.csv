@@ -1,0 +1,377 @@
+﻿PDK,Status,Name,Owner,Work type,Tag,Branch,Creator,Is automated,Business line,Summary,Accounting type
+tx-offshore-tax-application,active,"Offshore Tax Application, preparation of one reply letter",Service delivery,agent,,HK,"agent, system",FALSE,taxation,,
+cs-subdivision-of-shares,active,Subdivision of Shares,Billing and growth,agent,,SG,agent,FALSE,corporateSecretary,,
+cp-check-user-pep-and-sanctions,active,Check user RiskScreen,Billing and growth,agent,,"GB, HK, SG",system,FALSE,compliance,Complience should update user if the under sanctions or other restrictions,
+cs-approve-legal-address,active,cs-approve-legal-address,Billing and growth,agent,,GB,system,FALSE,clientSuccess,The agent needs to add the new company details to Hoxton (legal address provider),"None-accounting, OA, Xero"
+up-audit,active,Audit upsell,Service delivery,communication,,HK,agent,FALSE,upsell,Communication with a client to upsell the audit,OA
+ru-adhoc,active,,Billing and growth,agent,,SG,agent,FALSE,renewalsUpsell,The pdk is for the renewal team when they work with adhoc,"None-accounting, OA"
+ac-accounting-compliance-nd-review,active,Compliance ND Review <Date>,Service delivery,agent,,SG,system,FALSE,accounting,Compliance ND Review for a client,"None-accounting, OA, Xero"
+ac-accounting-start,deprecated,Accounting Client Assignation,,agent,,"GB, SG",system,TRUE,accounting,Accounting client assignation,OA
+ac-accounting-start-hk,deprecated,,,agent,,HK,system,TRUE,accounting,Accounting client assignation,OA
+ac-accounting-strike-off-internal,active,Accounting Strike Off - Zerorization of accounts,Service delivery,agent,,"GB, SG",system,TRUE,accounting,Company strike off,"None-accounting, OA, Xero"
+ac-accounts-filing-report-internal,active,"<First &/ Dormant> Statutory Accounts filing, <Date start> - <Date end>",Service delivery,agent,"filing flow, report, year end",GB,system,TRUE,accounting,Prepare year-end accounts for regulatory filing,OA
+ax-annual-filing-hmrc,active,"Annual filing to HRMC, <Date start> - <Date end>",Service delivery,agent,"filing flow, report",GB,system,TRUE,accounting,Prepare and file to HMRC the Corporate/Self-Assessment Tax return,OA
+ax-accountant-notification,active,Notification for accountant,Service delivery,agent,,"GB, HK, SG",system,TRUE,accounting,,
+ac-advise-needed,active,,Service delivery,communication,,"GB, HK, SG","agent, client",FALSE,accounting,Open format ticket regarding accounting matters,"None-accounting, OA, Xero"
+ac-audit-liaising-report-internal,active,Audit Liaising,Service delivery,agent,one-off,"GB, HK, SG",system,TRUE,accounting,Assist clients with audit questions,OA
+ac-bank-account-match,deprecated,,,communication,,?,,,accounting,,
+ac-bank-reconnect,active,Reconnect your bank accounts,Client experience,client,"bank account, bank connection","GB, HK, SG",system,TRUE,accounting,Re-connect bank integration due to regulatory rules,OA
+ac-bank-statement,deprecated,,,communication,,"GB, HK, SG",,,accounting,Outdated category — used in various unstructured ways,
+ac-bank-statements-chasing,deprecated,,,agent,,"GB, SG",system,,accounting,Outdated ticket for bank statement chasing,
+ac-company-tax-report-internal,deprecated,Corporation Tax Payment Due for <FYE>,,agent,year end,GB,system,FALSE,accounting,Reminder to pay Corporate tax,OA
+ac-consolidation-internal,active,"Consolidation reporting, <Jun 2022 - May 2023>",Service delivery,agent,"report, year end","HK, SG",system,TRUE,accounting,Consolidation report for the financial year,OA
+ac-cpf-registration-internal,active,CPF Registration,Service delivery,agent,,SG,system,FALSE,payroll,CPF registration,
+ac-csch-report-internal,active,Confirmation Statement Completion <Date>,Service delivery,agent,report,GB,system,FALSE,accounting,Prepare and submit Confirmation statement to Companies House,OA
+ac-custom-report-internal,active,Custom report preparation,Service delivery,agent,report,GB,system,FALSE,accounting,,
+ac-document-categorisation,active,Categorisation,Service delivery,agent,,"GB, HK, SG",system,FALSE,accounting,Bookkeeping categorisation,OA
+ac-document-categorization-fallback,active,Categorisation fallback ticket for Bookkeeper,Service delivery,agent,,"GB, HK, SG",system,FALSE,accounting,Bookkeeping categorisation,OA
+ac-document-complex-reconciliation-in,active,Complex Reconciliation in,Service delivery,agent,,"GB, HK, SG",system,TRUE,accounting,Reconciliation of the money-in financial transactions,OA
+ac-document-complex-reconciliation-out,active,Complex Reconciliation out,Service delivery,agent,,"GB, HK, SG",system,TRUE,accounting,Reconciliation of the money-out financial transactions,OA
+ac-eci-report-internal,active,"Estimated Chargeable Income (ECI), <Date start - Date end>",Service delivery,agent,"report, year end",SG,system,TRUE,taxation,Kindly proceed with the ECI filing for this client for the Financial Year End ${fiscalYearEnd}.,"OA, Xero"
+ac-filing-eci,deprecated,,,communication,,?,,,accounting,,
+ac-filing-tax-return,deprecated,,,communication,,?,,,taxation,,
+ac-follow-up,active,,Service delivery,communication,,"GB, HK, SG","agent, client",FALSE,accounting,Open format ticket regarding accounting matters,"OA, Xero"
+ac-follow-up-fye,deprecated,,,agent,,SG,agent,FALSE,accounting,Follow up with a client to gather documents for FYE,OA
+ac-gst-exemption-internal,active,GST Exemption,Service delivery,agent,one-off,SG,system,FALSE,accounting,GST Exemption for the client,"OA, Xero"
+ac-gst-registration-internal,active,GST Registration,Service delivery,agent,one-off,SG,system,TRUE,accounting,GST registration for client's business,"None-accounting, OA, Xero"
+ac-gst-report-internal,active,"<Monthly/Quarterly> GST Return filing, <Date start> - <Date end>",Service delivery,agent,"filing flow, report",SG,system,TRUE,accounting,Prepare and submit GST report,OA
+ac-invisible-accounting-start,deprecated,,,communication,,?,,,accounting,,
+ac-ir21-report-internal,active,IR21 for 1,Service delivery,agent,report,SG,system,,payroll,IR21 form,
+ac-ir8a-report-internal,active,IR8A for <N> employees by <Company name>,Service delivery,agent,,SG,system,,payroll,IR8A report,
+"
+
+ac-incorporation-documents-review",active,Document's manual review for [company name],Service delivery,agent,,GB,system,,,,
+ac-monthly-accounting,deprecated,,,communication,,"GB, HK, SG",agent,FALSE,accounting,Open format ticket regarding accounting matters,"OA, Xero"
+ac-monthly-accounting,deprecated,,,communication,,?,,,other,,
+ac-mpf-report-internal,active,,Service delivery,agent,,HK,system,,payroll,MPF for client's employees,
+ac-mpf-scheme-registration-internal,active,,Service delivery,agent,,HK,system,,payroll,MPF scheme registration,
+ac-mr-report-internal,deprecated,"Annual management report for Financial year ending <Date>
+<Monthly, Quarterly, Cust.period> management report for <Date>",,agent,"report, year end","GB, HK, SG",system,TRUE,accounting,Prepare Management report for the set period for the client,"OA, Xero"
+ac-new-service,deprecated,,,agent,,"GB, SG",,,accounting,"Was used as the request for new service, now is outdated",
+ac-new-service-hk,deprecated,,,communication,,HK,,FALSE,accounting,Seems outdated for adding new accounting service,
+ac-ocr-quality-control,deprecated,,,communication,,?,,,accounting,,
+ac-other,active,,Service delivery,communication,,"GB, HK, SG","agent, client",FALSE,accounting,Unstructured ticket with a 'bin' of various requests,"None-accounting, OA, Xero"
+ac-other-accounting-services-internal,deprecated,Other accounting services,,agent,one-off,"GB, HK, SG",system,FALSE,accounting,Ticket aggregating unstructured ad-hoc paid services,"None-accounting, OA, Xero"
+ac-p11d-report-internal,active,,Service delivery,agent,,GB,system,,payroll,Benefit form for client,
+ac-paye-registration,active,PAYE Registration,Service delivery,agent,,GB,"agent, system",TRUE,payroll,PAYE registration,"None-accounting, OA, Xero"
+ac-payslip-report-internal,active,Payslip for <N> employee by <Company name>,Service delivery,agent,,SG,system,,payroll,Payslips,
+ac-personal-tax-report-internal,deprecated,Personal Tax for <N> employees by <Company name>,,agent,,"GB, SG",,,payroll,Personal tax payment,
+ac-procedure-financial-year-closing,deprecated,Closing Financial Year ending <Date>,,client,year end,SG,system,TRUE,accounting,Client-facing procedure for providing all inputs for closing the financial year,OA
+ac-promise-to-client-internal,deprecated,,,agent,,"GB, HK, SG",agent,FALSE,accounting,Seems outdated type of ticket for tickets created from other tickets,"None-accounting, OA, Xero"
+ac-reconnect-store,deprecated,,,client,,"GB, SG",,,accounting,Re-connect e-com platform due to regulatory rules,
+ac-reference-preparation,active,"
+
+Professional references",Service delivery,agent,,GB,system,FALSE,accounting,,
+ac-tax-return-report-internal,active,"First Profits Tax Return <FY>
+Profits Tax Return for <FY>",Service delivery,agent,"report, year end",HK,system,FALSE,taxation,Tax return report for HK,"None-accounting, OA, Xero"
+ac-taxation,deprecated,,,communication,,?,,,accounting,,
+ac-tax-investigation,active,"
+
+Tax investigation support",Service delivery,agent,,GB,system,,accounting,,
+ac-trial-ends,deprecated,,,communication,,?,,,accounting,,
+ac-trial-start,deprecated,,,agent,,"GB, SG",,,accounting,Seems outdated,
+ac-ufs-report,deprecated,,,agent,,"GB, SG",,,accounting,manual alternative for automated UFS ticket,
+ac-ufs-report-internal,active,"Unaudited Financial Statements, <Period>",Service delivery,agent,"report, year end","HK, SG",system,TRUE,accounting,Prepare UFS report for the financial year,OA
+ac-vat-registration,active,VAT Registration,Service delivery,agent,one-off,GB,"agent, system",TRUE,taxation,VAT registration,"OA, Xero"
+ac-vat-report-internal,active,"<Monthly/Quarterly/Yearly> VAT Return submission, <month + year>",Service delivery,agent,"filing flow, report",GB,system,TRUE,accounting,Prepare and submit VAT report,OA
+ac-xbrl-report-internal,active,"XBRL Reporting - <Simplified, Full>",Service delivery,agent,"report, year end",SG,system,FALSE,accounting,Prepare full XBRL report,OA
+ac-xero-connection-failed,deprecated,Xero Connection Failed,,agent,,"GB, HK, SG",system,FALSE,accounting,Seems outdated for Xero,
+ad-other,active,,Client experience,communication,,"GB, HK, SG",agent,,admin,Conversations around Mail delivery by Registered Office Team,
+ad-mail,active,Mail,Client experience,communication,,"GB, HK, SG",agent,FALSE,admin,Conversations around Mail delivery,
+as-deduplication,active,Check duplicates,Service delivery,agent,,"GB, HK, SG",system,FALSE,accounting,Is it document deduplication process?,OA
+as-document-classification,active,Tagging,Service delivery,agent,,"GB, HK, SG",system,FALSE,accounting,Document classification,"None-accounting, OA, Xero"
+as-document-classification-revision,deprecated,Classification revision,,agent,,"GB, HK, SG",system,FALSE,accounting,Classification revision,OA
+as-fallback-ticket,active,Fallback ticket,Service delivery,agent,,"GB, HK, SG",system,FALSE,accounting,Fix document error,OA
+as-payslip-employee-selection,active,Employee Selection,Service delivery,agent,,"GB, SG",system,FALSE,accounting,Employee selection for Payslips,OA
+as-quality-control,active,Quality Control,Service delivery,agent,,"GB, HK, SG",system,FALSE,accounting,Document processing quality control,OA
+as-transaction-conflicts-resolving,active,Resolve discrepancies in transactions,Service delivery,agent,,"GB, HK, SG",system,FALSE,accounting,,OA
+audit-other,active,,Service delivery,agent,,HK,agent,,audit,Conduct Audit for a certain period,
+ax-annual-filing-companies-house,deprecated,Annual filing to Companies House for the FY ending ${fyeEndingYear},,agent,year end,GB,system,FALSE,accounting,Annual filing to Companies House,OA
+ax-chasing-call-bank-reconnection,deprecated,Follow-up call,,agent,"bank account, bank connection, call","GB, HK, SG",system,TRUE,accounting,Follow-up call for Plaid re-connection,OA
+ax-chasing-call-month,deprecated,Follow-up call,,agent,"call, documents collection",GB,system,TRUE,accounting,Follow-up call to collect clients' documents,OA
+ax-client-request,active,,Client experience,agent,,"GB, SG",agent,FALSE,accounting,Internal task created from a client conversation,"OA, Xero"
+ax-ocbc-account-connect,deprecated,Connect your OCBC accounts,,client,"bank account, bank connection",SG,system,FALSE,accounting,Establish OCBC bank integration,OA
+ax-unknown-bank-account,active,Confirm bank account details,Client experience,client,"bank account, documents collection","GB, HK, SG",system,TRUE,accounting,Confirmation of bank account details in a bank statement,"OA, Xero"
+ax-unrecognised-bank-account,active,Choose the relevant account for bank statements,Client experience,client,"bank account, documents collection","GB, HK, SG",system,TRUE,accounting,A client has to choose the correct bank account for a bank statement with none present in the document,"OA, Xero"
+bi-card-survey,deprecated,OSOME subscription,,communication,,"GB, HK, SG",,,billing,Conversation for Osome subscription renewal,
+bi-direct-debit-mandate-canceled,active,Mandate cancelled,Billing and growth,client,,GB,system,TRUE,billing,Notification about cancelled Direct debit mandate,
+bi-direct-debit-mandate-expired,active,Mandate expired,Billing and growth,client,,GB,system,TRUE,,,
+bi-direct-debit-payment-failed,deprecated,,,client,,GB,,,billing,Notification for failed payment,
+co-nominee-director-assignmentgh,active,New ND Introduction — <Company name> — <Client name>,Billing and growth,client,,"GB, SG",system,,compliance,New ND Introduction,
+cp-missing-in-action,active,,Billing and growth,agent,,"GB, SG",agent,FALSE,compliance,setting client as Missing In Action,
+cp-other,active,,Billing and growth,agent,,"GB, HK, SG",agent,,compliance,KYC during Onboarding,
+cp-termination-notice,active,Termination Notice for Nominee Director,Billing and growth,agent,,"GB, SG",system,,nomineeDirector,Termination Notice for Nominee Director,
+cs-acra-penalties,deprecated,,,client,,?,,,corporateSecretary,This is not required since penalties are linked to existing transaction,
+cs-adoption-of-agreement,active,Resolution for adoption of agreements,Billing and growth,agent,,"GB, SG",agent,,corporateSecretary,,
+cs-adoption-of-constitution,active,Resolution for adopting revised constitution,Billing and growth,agent,,"GB, SG",agent,,corporateSecretary,,
+cs-advise-needed,deprecated,,,agent,,?,,,corporateSecretary,This is for adhoc advises required by the client,
+cs-allotment-of-shares,active,Allotment of shares,Billing and growth,agent,,"GB, HK, SG",agent,,corporateSecretary,"HK: Additional shares to be allotted to existing / new shareholder
+
+Please provide the following information:
+1. No. of shares to be allotted
+2. Name of shareholder
+3. Subscription money",
+cs-annual-filing,deprecated,,,agent,,?,,,corporateSecretary,This is for annual general meeting and annual return filing both. We can probably have one pdk which is annual filing and eliminate the annual general meeting pdk.,
+cs-annual-general-meeting,active,Hold Annual General Meeting,Billing and growth,agent,filing flow,"GB, SG","agent, system",,corporateSecretary,This can be removed and we can use only annual filing pdk which means both AGM and AR. The automation logic will also have to be changed in SG,
+cs-annual-returns,active,Annual Return,Billing and growth,agent,,"GB, HK, SG",agent,FALSE,corporateSecretary,HK: A Hong Kong private company must in respect of every year deliver its annual return to the Registrar of Companies for registration within 42 days after the anniversary of the date of the company's incorporation in that year,
+cs-appointment-of-new-auditor,active,Appointment of auditor,Billing and growth,client,,"GB, SG",agent,,corporateSecretary,"SG : A private company is required to appoint an Auditor when it satisfies any 2 of the following criteria for each of the 2 financial years immediately before the current financial year:
+1. The company’s annual revenue exceeds $10 million;
+2. The value of the company’s total assets exceeds $10 million; or
+3. The company has more than 50 employees.",
+cs-appointment-of-new-director,active,Appointment of Director,Billing and growth,agent,,"GB, HK, SG",agent,,corporateSecretary,"HK: Addition of new director(s)
+
+Please provide the following information:
+1. Name of directors
+2. Effective date of appointment
+3. Residential address
+4. Passport / HKID",
+cs-appointment-of-new-secretary,active,Appointment of Secretary,Billing and growth,agent,,"GB, HK, SG",agent,,corporateSecretary,"HK: Addition of new secretary
+
+Please provide the following information:
+1. Name of secretary
+2. Effective date of appointment
+3. Residential address
+4. Passport / HKID",
+cs-bank-account-opening,active,Your bank account,Client experience,client,bank account,GB,"agent, system",FALSE,corporateSecretary,,"None-accounting, OA, Xero"
+cs-phys-docs-prep,,Green Box (GBA),,,,HK,system,TRUE,corporateSecretary,Physical documents preparing for clients,
+cs-phys-docs-prep-local,,Green Box (BAU & Local),,,,HK,system,TRUE,corporateSecretary,Physical documents preparing for clients,
+cs-capital-injection,,Capital injection (without allotment of shares),,,,HK,system,TRUE,corporateSecretary,Capital injection,
+cs-setup-branch-office,,Corporate Secretary - Set up branch office,,,,HK,system,TRUE,corporateSecretary,Physical documents preparing for clients,
+nd-bank-statements-and-mr,active,Bank statements and MR,Client experience,agent,,"GB, SG",agent,FALSE,nomineeDirector,,
+ob-signing-pre-incorporation-documents,active,Check and sign pre-incorporation docs,Billing and growth,client,incorporation,SG,system,TRUE,onboarding,,
+cs-bank-account-opening-follow-up,deprecated,,,agent,,?,,,corporateSecretary,,
+cs-certification-of-documents,active,Certification of corporate documents,Billing and growth,agent,,"GB, HK, SG",agent,,corporateSecretary,HK: Corporate documents to be certified by a Chartered Secretary.,
+cs-change-of-business-activity,active,Change of Business Activity ?,Billing and growth,agent,,"GB, HK, SG",agent,,corporateSecretary,HK: Change of business activities in Business Registration Certificate,
+cs-change-of-company-address,active,Change of Company Address ?,Billing and growth,agent,,"GB, HK, SG",agent,,corporateSecretary,"HK: Change of registered office address of the company
+
+Please provide the following information:
+-new registered office address",
+cs-change-of-company-name,active,Change of Company Name ?,Billing and growth,agent,,"GB, HK, SG",agent,,corporateSecretary,"HK:
+Change of company name
+
+Please provide the following information:
+- proposed company name",
+cs-change-of-directors-particulars,active,Change of Director's residential address / ID or passport number,Billing and growth,agent,,"GB, HK, SG",agent,,corporateSecretary,"HK: Change of Director’s residential address / ID or passport no.
+
+Please provide the following information:
+- new residential address 
+- new HKID / passport no.
+- effective date of change",
+cs-change-of-financial-year-end,active,Change of FYE ?,Billing and growth,agent,,"GB, HK, SG",agent,,corporateSecretary,"HK: Change of financial year end
+
+Please provide the following information:
+- new financial year end date",
+cs-change-of-secretarys-particulars,active,Change of Secretary’s address/ ID or passport number,Billing and growth,agent,,"GB, HK, SG",agent,,corporateSecretary,"HK: Change of Secretary’s residential address / ID or passport no.
+
+Please provide the following information:
+- new residential address 
+- new HKID / passport no.
+- effective date of change",
+cs-change-of-shareholders-particulars,active,Change of Shareholder’s address,Billing and growth,agent,,"GB, HK, SG",agent,,corporateSecretary,"HK: Change of Shareholder address
+
+Please provide the following information:
+- new address
+- effective date of change",
+cs-closing-sp-partnership,deprecated,,,agent,,?,,,corporateSecretary,,
+cs-collection-of-statutory-files,deprecated,,,agent,,"GB, SG",,,corporateSecretary,,
+cs-corp-pass,active,CorpPass Registration,Billing and growth,client,,"GB, SG",agent,,corporateSecretary,,
+cs-deregistration-of-charge,deprecated,Deregistration,,agent,,HK,,,corporateSecretary,Deregistration of a company,
+cs-employment-pass,deprecated,,,agent,,?,,,corporateSecretary,,
+cs-follow-up,deprecated,,,client,,"GB, SG",,,corporateSecretary,,
+cs-hsbc-account-application,deprecated,Application for HSBC bank account,,client,,HK,,,corporateSecretary,Application for HSBC bank account,
+cs-incorporation,active,Incorporation,Billing and growth,agent,,"GB, HK, SG",agent,FALSE,corporateSecretary,,
+cs-incorporation-pte-ltd-local,active,Incorporation for Singaporean,Billing and growth,agent,,"GB, SG",agent,,onboarding,,
+cs-kyc-status-recovery,active,,Billing and growth,agent,,"GB, HK, SG","agent, system",,compliance,Redo KYC - Periodical Review,
+cs-legalisation,active,,Billing and growth,agent,,"GB, SG",agent,,corporateSecretary,,
+cs-name-reservation,deprecated,,,agent,,?,,,corporateSecretary,,
+cs-notice-for-controller,active,Sign Notice for Controller,Billing and growth,client,,SG,"agent, system",,corporateSecretary,,
+cs-notice-for-controller-fallback,active,Update information about <User name>,Billing and growth,agent,,"GB, SG",system,,corporateSecretary,,
+cs-other,active,,Billing and growth,communication,,"GB, HK, SG",agent,,corporateSecretary,,
+cs-purchase-of-acra-extract,active,,Billing and growth,agent,,"GB, HK, SG",agent,,corporateSecretary,HK: N/A,
+cs-referral-program-follow-up,deprecated,,,client,,?,,,corporateSecretary,,
+cs-register-of-nominee-shareholders,deprecated,,,agent,,"GB, SG",,,corporateSecretary,,
+cs-registration-of-charge,deprecated,,,agent,,?,,,corporateSecretary,,
+cs-removal-of-exisiting-auditor,deprecated,,,agent,,?,,,corporateSecretary,,
+cs-removal-of-exisiting-director,active,"Resignation of Director ",Billing and growth,agent,,"GB, HK, SG",agent,,corporateSecretary,"HK: Resignation of director
+
+Please provide the following information:
+- Name of director
+- Date of resignation",
+cs-removal-of-exisiting-secretary,active,Resignation of Secretary,Billing and growth,agent,,"GB, HK, SG",agent,,corporateSecretary,"HK: Resignation of Secretary
+
+Please provide the following information:
+- Date of resignation",
+cs-removal-of-existing-auditor,active,Resignation of Auditors,Billing and growth,agent,,"GB, SG",agent,,corporateSecretary,,
+cs-share-cancellation,active,,Billing and growth,agent,,"GB, SG",agent,,corporateSecretary,,
+cs-share-capital-reduction,active,,Billing and growth,client,,"GB, SG",agent,,corporateSecretary,,
+cs-share-transfer,active,Transfer of shares,Billing and growth,agent,,"GB, HK, SG",agent,,corporateSecretary,"HK: Share(s) transfer from existing shareholder to another 
+
+Please provide the following information:
+1. Name of Transferor
+2. Name of Transferee
+3. No. of shares
+4. Consideration paid",
+cs-signing-consent-to-act-as-secretary-document,active,Sign consent to act as secretary document,Billing and growth,client,,"GB, SG","agent, system",,corporateSecretary,,
+cs-statutory-audit,deprecated,,,agent,,?,,,corporateSecretary,,
+cs-striking-off-llp,deprecated,,,agent,,"GB, SG",,,corporateSecretary,,
+cs-striking-off-the-company,active,,Billing and growth,agent,,"GB, HK, SG",agent,,corporateSecretary,HK: N/A,
+cs-update-of-registrable-controller,active,,Billing and growth,agent,,"GB, SG",agent,,corporateSecretary,,
+cx-client,active,New conversation,Client experience,communication,,"GB, HK, SG",client,FALSE,"client, clientSuccess",Conversations on various unstructured topics,"None-accounting, OA, Xero"
+cx-client,deprecated,,,communication,,?,,,onboarding,,
+cx-hard-bounce,deprecated,Update email address,Client experience,agent,,"GB, HK, SG",system,TRUE,clientSuccess,Task for agent to collect correct email address,"None-accounting, OA, Xero"
+cx-info,deprecated,Update the details for your subscription,,communication,,"GB, HK, SG",system,TRUE,other,The notification about billing details changes,None-accounting
+cx-info,deprecated,,Client experience,communication,,"GB, HK, SG",agent,FALSE,"client, clientSuccess, other",Conversations on various unstructured topics,"None-accounting, OA, Xero"
+cx-new-request,deprecated,,Client experience,communication,,"GB, SG",client,FALSE,other,Seems like outdated group for Client success chats,"None-accounting, OA, Xero"
+cx-other,active,,Client experience,communication,,"GB, HK, SG",agent,FALSE,"client, clientSuccess",A mixture of Client Success processes,"None-accounting, OA, Xero"
+cx-internal,active,,Client experience,agent,,"GB, HK, SG",agent,FALSE,clientSuccess,,
+is-advise-needed,active,,,agent,,"GB, SG",agent,,immigrationServices,,
+is-dependants-pass,active,,,agent,,"GB, SG",agent,,immigrationServices,,
+ax-corp-tax-payment-to-hmrc,active,Pay Corporation Tax for <period>,,agent,,GB,system,,,,
+is-employment-pass,active,,,agent,,"GB, SG",agent,,immigrationServices,,
+is-follow-up,active,,,agent,,"GB, SG",agent,,immigrationServices,,
+is-loc,active,,,agent,,"GB, SG",agent,,immigrationServices,,
+is-other,active,,,agent,,"GB, SG",agent,,immigrationServices,,
+ob-accounting-company-setup,active,Add your business details,Client experience,client,"accounting onboarding, onboarding checklist",GB,"agent, system",TRUE,onboarding,Collecting company details for the accounting,
+ac-csch-historical-report,deprecated,Historical Confirmation Statements review,,agent,report,GB,system,FALSE,accounting,Historical Confirmation Statements review,OA
+ob-accounting-historical-data,active,Share historical accounting data,,client,"accounting onboarding, documents collection, onboarding checklist","GB, SG","agent, system",TRUE,onboarding,Get client's historical accounting data / contact of previous accountant,"OA, Xero"
+ob-accounting-setup-status,deprecated,,,communication,,?,,,onboarding,,
+ob-advise-needed,active,,,agent,,"GB, HK, SG",agent,,onboarding,,
+ob-bank-account-wizard,active,OCBC is getting your Business Account ready,,client,,"GB, SG",system,,onboarding,OCBC is getting your Business Account ready,
+ob-bank-connections,to be deprecated,Connect your bank accounts,,client,"accounting onboarding, bank account, bank connection, onboarding checklist","GB, SG","agent, system",FALSE,onboarding,Client ticket to set up bank integrations,"OA, Xero"
+ob-bookkeeping-integration,active,Set up integrations to automate bookkeeping,Client experience,client,"accounting onboarding, onboarding checklist","GB, HK, SG",system,FALSE,onboarding,Client ticket to set up e-commerce integrations,
+ob-data-collection,active,Share details about your business,Billing and growth,client,"incorporation, onboarding checklist","GB, HK, SG","agent, system",TRUE,onboarding,Client ticket for business description and details,
+ob-follow-up,active,,,agent,,"GB, HK, SG",agent,,onboarding,,
+ob-if-bank-account-opened,deprecated,,,communication,,?,,,onboarding,,
+ob-if-converted-to-paid_accounting,deprecated,,,communication,,?,,,onboarding,,
+ob-incorporation-application,deprecated,,,communication,,?,,,other,,
+ob-incorporation-application,active,Incorporation,,agent,,GB,"agent, system",,onboarding,,
+ob-incorporation-compliance-waiting,active,Check and sign pre-incorporation docs,,agent,,"GB, SG",system,TRUE,onboarding,For KYC agent to send out pre-incorporation documents or when agent needs to go back to client and request for additional documents/information during Compliance review stage,
+ob-incorporation-congrats,active,Congrats! Next step for your business,,client,,"GB, SG",system,,clientSuccess,Suggestion for client to Book a call after the Incorporation,
+ob-incorporation-data-missed,active,Bank account ticket was not created,,agent,bank account,GB,system,FALSE,onboarding,,"None-accounting, OA, Xero"
+ob-incorporation-payment,active,SSF Payment,,client,,"GB, SG",client,,onboarding,Created to track payment during self-service incorporation,
+ob-incorporation-progress,active,Your incorporation progress,,communication,,GB,system,,onboarding,,
+ob-incorporation-share-details,active,Share data,,client,incorporation,"GB, SG",system,TRUE,onboarding,Client ticket for business description and details,
+ob-incorporation-shareholder-congrats,active,,,client,,"GB, SG",system,,clientSuccess,Congrats on incorporation and information on where to find documents,
+ob-incorporation-track,active,,,client,,"GB, SG",system,,onboarding,,
+ob-kyc,active,"Identity check
+Confirm your identity",Billing and growth,client,"incorporation, onboarding checklist","GB, HK, SG","agent, system",TRUE,onboarding,,"None-accounting, OA, Xero"
+ob-meet-your-accountant,active,Meet your Osome Accounting Team,Client experience,client,"accounting onboarding, onboarding checklist","GB, HK, SG",system,TRUE,onboarding,Book a call feature with 'Meet your accountant' ticket,OA
+ob-meeting,active,,,agent,,"GB, SG",agent,,onboarding,Setting up Onboarding call,
+ob-new-lead,active,Start your business with Osome,,agent,,"GB, HK, SG","agent, system",,onboarding,,
+ob-new-nominee-director-assignation,active,Meet the nominee director,,communication,,"GB, SG",system,TRUE,clientSuccess,Client-Nominee Director ticket for Deed of Indemnity and Consent form,
+ob-onboarding,active,"Confirm your identity
+Identity check
+Welcome to Osome",,client,,"GB, HK, SG","agent, system",,onboarding,"Welcome to Osome ticket not applicable to KYC team/process
+
+Confirm your identity and Identity check tickets are for individual KYC verification and process",
+ob-other,active,,,agent,,"GB, HK, SG",agent,,onboarding,,
+ob-qualification,deprecated,Qualification,,client,,SG,system,TRUE,onboarding,,"None-accounting, OA, Xero"
+ob-review-company,deprecated,Let’s review your company information,,client,,"GB, SG",system,TRUE,clientSuccess,"Showing information about the client’s company ","None-accounting, OA, Xero"
+ob-send-document,active,Sign <Company name> for <File name>,Client experience,communication,,"GB, HK, SG",system,FALSE,clientSuccess,Conversation format request for a client to sign a document,"None-accounting, OA, Xero"
+ob-signing-incorporation-documents,active,,,client,,"GB, SG","agent, system",,onboarding,,
+ob-signing-incorporation-documents-cad,deprecated,,,agent,,"GB, SG",,,onboarding,,
+ob-signing-incorporation-documents-cdd,deprecated,,,agent,,"GB, SG",,,onboarding,,
+ob-signing-incorporation-documents-cs,deprecated,,,communication,,"GB, SG",,,onboarding,,
+ob-welcome,deprecated,Welcome to Osome,,client,,"GB, SG",system,,onboarding,Welcome to Osome ticket,
+ob-xero-connection,deprecated,,,client,,"GB, HK, SG",system,,onboarding,Outdated ticket to set up Xero connection,Xero
+other,active,,,agent,,"GB, SG",agent,,accounting,"Seems random, but probably still needed",
+other,deprecated,,,communication,,"GB, HK, SG",,,other,Seems like outdated random group of chats,
+ps-incorporation-onboarding,active,Onboarding <Company name>,,client,,"GB, SG","agent, system",FALSE,clientSuccess,Client Success introduction of companies incorporated by Partners,"None-accounting, OA, Xero"
+ps-incorporation-onboarding,deprecated,,,communication,,?,,,whiteLabel,,
+ps-incorporation-request,active,Aspire incorporation <Company name>,,agent,,"GB, SG","agent, system",,whiteLabel,,
+nd-notices-and-summons,active,Notices and summons,Client experience,agent,,"GB, SG",agent,FALSE,nomineeDirector,,
+nd-strike-off-matters,active,Strike off matters,Client experience,agent,,"GB, SG",agent,FALSE,nomineeDirector,,
+ps-incorporation-upsale,active,Aspire incorporation upsale,,client,,"GB, SG",system,,onboarding,,
+cs-incorporation,active,Incorporate company,,agent,incorporation,SG,system,TRUE,,,
+ac-personal-income-tax,active,Self-Assessment Tax Return filing to HMRC for <YYYY>,,agent,filing flow,GB,system,TRUE,accounting,,OA
+referral-other,deprecated,,,agent,,"GB, SG",,,referral,Seems outdated random collection of tickets,
+ru-other,active,,,agent,,"GB, HK, SG",agent,FALSE,renewalsUpsell,,
+sl-one-one-chat,deprecated,,,communication,,"GB, SG",,,other,Seems outdated random group,
+tx-advise-needed,active,,,communication,,"GB, SG",agent,,taxation,,
+tx-application-of-cor,active,Certificate of Residence ?,,agent,,"GB, SG",agent,,taxation,Certificate of residence,
+tx-csc-report-internal,active,Form C-S/C <Date>,,agent,"filing flow, report, year end",SG,system,FALSE,taxation,Complete the Form C-S/C for the client,"OA, Xero"
+tx-filing-of-eci,active,Estimated Chargeable Income (ECI) filing is coming,,communication,filing flow,SG,"agent, system",TRUE,taxation,"This ticket was created to notify the client about the upcoming ECI filing for the Financial Year End ${fiscalYearEnd}, and encourage them to submit their documents earlier.
+
+Kindly advise the client if they have any questions and resolve the ticket. Cancel the ticket if no questions were raised and it is past {financial year end + 3 months}.",OA
+tx-filing-tax-return,active,General Tax Matters ?,,agent,,"GB, SG",agent,,taxation,,
+tx-follow-up,deprecated,,,communication,,"GB, SG",,,taxation,Follow-ups for consultation sessions,
+tx-other,active,,,communication,,"GB, HK, SG",agent,,taxation,,
+tx-payroll-consult,active,Payroll Enquiries ?,Client experience,agent,,"GB, SG",agent,,payroll,Payroll and PAYE advisory,
+tx-self-assessment-reg,deprecated,Self-assessment Registration Enquiries,,agent,,GB,,,taxation,Self-Assessment registration consultation,
+tx-tax-clearance,active,General Tax Matters ?,,agent,,"GB, SG",agent,,taxation,,
+tx-tax-investigation,deprecated,Tax Compliance,,agent,,GB,,,taxation,Investigate and file a response to HRMC compliance requests,
+tx-tax-planning-consult,deprecated,Tax Planning Enquiries,,communication,,GB,,,taxation,VAT / other tax planning consultation,
+tx-vat-deregistration,active,"Cancellation of the VAT Registration
+VAT Deregistration",,agent,one-off,GB,"agent, system",FALSE,taxation,VAT deregistration,"OA, Xero"
+up-accounting,deprecated,,,agent,,"GB, HK, SG",,,upsell,,
+up-accounting,deprecated,,,communication,,"GB, SG",,,accounting,Open format ticket regarding accounting matters,
+up-renewal-accounting,deprecated,,,communication,,?,,,whiteLabel,,
+up-renewal-accounting,deprecated,,,agent,,"GB, HK, SG",,,upsell,,
+up-renewal-address,deprecated,RO Service,,client,,"GB, SG",,,upsell,,
+up-renewal-address,deprecated,,,communication,,?,,,whiteLabel,,
+up-renewal-automatic,deprecated,Hi! It’s time to renew your services!,,client,,"GB, HK, SG",,,upsell,,
+up-renewal-automatic-agent-engagement,deprecated,,,client,,?,,,billing,Renewal of the subscription,
+up-renewal-automatic-fallback,deprecated,,,client,,,,,upsell,,
+up-renewal-corporate-secretary-registered-office,deprecated,,,communication,,?,,,upsell,,
+up-renewal-corporate-secretary-registered-office-nominee-director,deprecated,,,communication,,?,,,upsell,,
+up-renewal-monthly,active,Hi! Your subscription renewal is coming soon,,client,,"GB, HK, SG",system,TRUE,renewalsUpsell,,
+up-renewal-monthly-bank-transfer,active,Hi! Your subscription renewal is coming soon,,client,,"GB, HK, SG",system,TRUE,renewalsUpsell,,
+up-renewal-monthly-direct-debit,active,,,client,,GB,system,TRUE,renewalsUpsell,,
+up-renewal-nominee-director,deprecated,,,communication,,?,,,upsell,,
+up-renewal-nominee-director,deprecated,,,communication,,?,,,whiteLabel,,
+up-renewal-nominee-shareholder,deprecated,,,communication,,?,,,upsell,,
+up-renewal-payroll,deprecated,Payroll package,,client,,"GB, SG",,,upsell,,
+up-renewal-quarterly-account-autocalibration,active,Your accounting plan requires an upgrade,,client,,"GB, HK, SG",system,TRUE,renewalsUpsell,,
+up-renewal-secretary,deprecated,Upsell Director's reso request,,client,,"GB, SG",,,upsell,,
+up-renewal-ufs-account-autocalibration,active,Your accounting plan requires an upgrade,,client,,"GB, HK, SG",system,TRUE,renewalsUpsell,,
+up-renewal-ufs-monthly-account-autocalibration,deprecated,Your accounting plan requires an upgrade,,client,,"GB, HK, SG",system,TRUE,renewalsUpsell,,
+up-renewal-yearly,active,Hi! It’s time to renew your services!,,client,,"GB, HK, SG","agent, system",TRUE,renewalsUpsell,,
+up-renewal-yearly-auto-charge,active,Hi! Your subscription renewal is coming soon,,client,,"GB, HK, SG",system,TRUE,renewalsUpsell,,
+up-renewal-yearly-direct-debit,active,,,client,,GB,system,TRUE,renewalsUpsell,,
+up-renewal-yearly-autocalibration,active,It's time to renew & upgrade your subscription,,client,,"GB, HK, SG",system,TRUE,renewalsUpsell,,
+up-renewal-monthly-autocalibration,deprecated,It's time to renew & upgrade your subscription,,client,,"GB, HK, SG",system,TRUE,renewalsUpsell,,
+up-secretary,deprecated,,,agent,,"GB, SG",,,upsell,,
+wl-other,active,,,agent,,"GB, HK, SG",agent,,whiteLabel,,
+wl-renewal,active,Renewal <Date>,,agent,,"GB, SG","agent, system",,whiteLabel,,
+as-suspense-tax-rate-check,active,Suspense tax rate check ticket for an accounting document <DocumentID>,,agent,,GB,system,,other,,
+cs-compliance,active,Compliance (RAF),,agent,,GB,system,,compliance,,
+ob-take-your-money-out,active,How to take money out from your company,,communication,,GB,system,,onboarding,,
+ac-document-simple-reconciliation,active,Simple Reconciliation,,agent,,"GB, HK, SG",system,FALSE,,,
+ax-bookkeeping-validation,active,Bookkeeping Validation,,agent,filing flow,"GB, HK, SG",system,TRUE,accounting,Validation flow. Leads to setting the “Bookkeeping is done flag” and start of Review process,OA
+ax-tax-validation,active,Bookkeeping Tax Validation,,agent,filing flow,"GB, HK, SG",system,TRUE,accounting,Validation flow. Leads to setting the “Bookkeeping is done flag” and start of Review process,OA
+ac-sa-report-internal,active,Self-Assessment Report,,agent,filing flow,GB,system,,taxation,,
+ax-accounts-review,active,Review with Accountant,,agent,filing flow,"GB, SG",system,TRUE,accounting,Review with Accountant for some period,OA
+ax-audit-quotation,active,Ticket for providing communication for audit process,,communication,,HK,system,TRUE,accounting,,
+ax-ufs-report,active,UFS report creation,,agent,filing flow,SG,system,TRUE,accounting,Create UFS report for some period for review,OA
+ax-afs-report,active,AFS report creation,,agent,filing flow,HK,system,TRUE,"accounting, audit",Create AFS report for some period for review,OA
+ax-tax-review,active,Review with Accountant for tax period completion,,agent,filing flow,"GB, SG",system,TRUE,accounting,VAT/GST review with Accountant for period,OA
+cs-change-of-nominee-directors,active,Change of Nominee Directors,Billing and growth,agent,,SG,system,,corporateSecretary,,
+ob-incorporation-request-company-incorporated,active,Company created in Companies House,Billing and growth,agent,,GB,system,,onboarding,Information about incorporated company,
+ob-incorporation-request-check-errors,active,Check Companies House request errors,Billing and growth,agent,,GB,system,,onboarding,Errors from Companies House,
+cl-other,active,,,agent,,SG,agent,,,,
+cs-nominee-director-resignation-fix-error,active,Need Fix Nominee Director Resignation,Billing and growth,agent,,SG,system,,corporateSecretary,,
+cs-nominee-director-resignation-notice,active,Nominee Director Status Update,Billing and growth,agent,,SG,system,,corporateSecretary,,
+cr-restore-my-account,deprecated,,,agent,,"GB, HK, SG",client,,other,special pdk which is used when user wants to change his email or/and pahoneNumber,"None-accounting, OA, Xero"
+ax-self-assessment-tax-return-filing-to-hmrc,active,Self Assessment Tax Return for <Year>,,agent,filing flow,GB,system,,accounting,"Work ticket for ""selfAssessmentTaxReturnFilingToHmrc"" company event","OA, Xero"
+ac-continuos-complex-reconciliation-out,active,Complex Reconciliation out,,agent,,"GB, HK, SG",system,TRUE,accounting,Ticket for complex transaction reconciliation with suggested documents with movement out,OA
+ac-continuos-complex-reconciliation-in,active,Complex Reconciliation in,,agent,,"GB, HK, SG",system,TRUE,accounting,Ticket for complex transaction reconciliation with suggested documents with movement in,OA
+cs-dividend,active,Dividend,Client experience,agent,,"GB, HK, SG",agent,FALSE,corporateSecretary,,
+cs-deregistration,active,Deregistration,Client experience,agent,,"GB, HK, SG",agent,FALSE,corporateSecretary,,
+cs-chop-and-seals,active,Chop and seals,Client experience,agent,,"GB, HK, SG",agent,FALSE,corporateSecretary,,
+cs-apply-dormancy,active,Apply dormancy,Client experience,agent,,"GB, HK, SG",agent,FALSE,corporateSecretary,,
+cs-cease-dormancy,active,Cease dormancy,Client experience,agent,,"GB, HK, SG",agent,FALSE,corporateSecretary,,
+cs-annual-returns-filing,active,Annual Return filing to Companies Registry,,agent,filing flow,HK,system,TRUE,corporateSecretary,,
+cs-business-registration-certificate,active,Business Registration Certificate filing to Inland Revenue Department,,agent,,HK,system,TRUE,corporateSecretary,,
+ax-audited-financial-statements-filing,active,Audited Financial Statements filing to Inland Revenue Department,,agent,filing flow,HK,system,TRUE,accounting,,
+ax-profit-tax-return-filing,active,Profit Tax Return filing to Inland Revenue Department,,agent,,HK,system,TRUE,accounting,,
+ax-employees-return-filing,active,Employees Return filing to Inland Revenue Department,,agent,,HK,system,TRUE,accounting,,
+ob-manual-data-collection,active,Manual data collection,Client experience,communication,,"GB, HK, SG",agent,FALSE,onboarding,This ticket will be used for manual data collection in cases when there are problems with automated onboarding tickets,
+"cs-amendment-articles ",,Amendment of Articles of Association,,,,HK,system,TRUE,corporateSecretary,Amendment of Articles of Association,
+"cs-change-reg-cert-info ",,Change of Business Registration Certificate information,,,,HK,system,TRUE,corporateSecretary,Change of Business Registration Certificate information,
+"cs-cert-of-corp-docs ",,Certification of corporate documents,,,,HK,system,TRUE,corporateSecretary,"Certification of corporate documents, per document",
+cs-prep-resolution,,Preparation of resolution,,,,HK,system,TRUE,corporateSecretary,"Preparation of resolution, per document",
+cs-purchase-ird-cr,,Purchase of documents IRD/CR,,,,HK,system,TRUE,corporateSecretary,Purchase of documents IRD/CR,
+cs-consolidation-of-shares,active,Consolidation of Shares,Client experience,agent,,SG,agent,FALSE,corporateSecretary,,
+cs-bank-account-related-requests,active,Bank Account related requests,Client experience,agent,,SG,agent,FALSE,corporateSecretary,,
+cs-directors-fee,active,Director's Fee,Client experience,agent,,SG,agent,FALSE,corporateSecretary,,
+cs-change-of-corporate-representative,active,Change of corporate representative,Client experience,agent,,SG,agent,FALSE,corporateSecretary,,
