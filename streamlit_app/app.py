@@ -8,6 +8,7 @@ import datetime
 import os
 import tempfile
 import time # Used for potential delays if needed
+import subprocess
 from google.oauth2 import service_account
 
 # --- Streamlit Page Configuration ---
@@ -30,6 +31,7 @@ creds = service_account.Credentials.from_service_account_info(st.secrets["gcp"])
 GOOGLE_CLOUD_PROJECT = st.secrets["GOOGLE_CLOUD_PROJECT"]
 GOOGLE_CLOUD_LOCATION = st.secrets["GOOGLE_CLOUD_LOCATION"]
 PG_HOST = st.secrets["postgres"]["host"]
+PG_INSTANCE_CONNECTION_NAME = st.secrets["postgres"]["instance_connection_name"] # Add this secret
 PG_DATABASE = st.secrets["postgres"]["database"]
 PG_USER = st.secrets["postgres"]["user"]
 PG_PASSWORD = st.secrets["postgres"]["password"]
@@ -43,6 +45,130 @@ LLM_MODEL_NAME = 'gemini-2.0-flash'
 EMBEDDING_MODEL_NAME = "text-embedding-005" # Use the model from your script
 EMBEDDING_DIMENSION = 768 # Dimension for this model
 RETRIEVAL_LIMIT = 50 # Number of relevant snippets to retrieve from EACH source (messages, notes, tickets)
+
+# --- Cloud SQL Auth Proxy Setup ---
+# Use session state to ensure the proxy is only started once
+if 'cloudsql_proxy_process' not in st.session_state:
+    st.session_state['cloudsql_proxy_process'] = None
+if 'cloudsql_temp_key_path' not in st.session_state:
+     st.session_state['cloudsql_temp_key_path'] = None
+
+def start_cloudsql_proxy():
+    """Starts the Cloud SQL Auth Proxy as a subprocess."""
+    if st.session_state['cloudsql_proxy_process'] is not None:
+        # Proxy is already running
+        print("Cloud SQL Auth Proxy is already running.")
+        return
+
+    print("Attempting to start Cloud SQL Auth Proxy...")
+
+    try:
+        # 1. Get Service Account key from secrets and save to a temporary file
+        # We need the dictionary representation of the secret for json.dump
+        sa_key_dict = dict(st.secrets["gcp"])
+
+        # Create a temporary file to store the key securely
+        # delete=False means we are responsible for deleting it
+        temp_key_file = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+        temp_key_file_path = temp_key_file.name
+        # Write the JSON content to the temporary file
+        import json
+        json.dump(sa_key_dict, temp_key_file)
+        temp_key_file.close() # Close the file so the proxy can read it
+
+        st.session_state['cloudsql_temp_key_path'] = temp_key_file_path
+        print(f"Service account key saved to temporary file: {temp_key_file_path}")
+
+    except Exception as e:
+        st.error(f"Failed to save service account key to temporary file for Cloud SQL Proxy: {e}")
+        # Clean up the temp file if creation failed partway
+        if 'cloudsql_temp_key_path' in st.session_state and st.session_state['cloudsql_temp_key_path'] and os.path.exists(st.session_state['cloudsql_temp_key_path']):
+             os.unlink(st.session_state['cloudsql_temp_key_path'])
+             st.session_state['cloudsql_temp_key_path'] = None
+        return
+
+
+    # 2. Define the proxy command
+    proxy_executable = "./cloud-sql-proxy" # Assuming you put the executable in the root dir
+
+    # Check if the executable exists and is runnable
+    if not os.path.exists(proxy_executable):
+         st.error(f"Cloud SQL Auth Proxy executable not found at {proxy_executable}. Make sure 'cloud-sql-proxy' file is in your repo root and is executable (chmod +x).")
+         # Clean up the temp file
+         if st.session_state['cloudsql_temp_key_path'] and os.path.exists(st.session_state['cloudsql_temp_key_path']):
+             os.unlink(st.session_state['cloudsql_temp_key_path'])
+             st.session_state['cloudsql_temp_key_path'] = None
+         return
+    if not os.access(proxy_executable, os.X_OK):
+         st.error(f"Cloud SQL Auth Proxy executable at {proxy_executable} is not executable. Run 'chmod +x ./cloud-sql-proxy' in your repository.")
+         # Clean up the temp file
+         if st.session_state['cloudsql_temp_key_path'] and os.path.exists(st.session_state['cloudsql_temp_key_path']):
+             os.unlink(st.session_state['cloudsql_temp_key_path'])
+             st.session_state['cloudsql_temp_key_path'] = None
+         return
+
+
+    command = [
+        proxy_executable,
+        f"--credentials-file={temp_key_file_path}", # Use the temporary file
+        PG_INSTANCE_CONNECTION_NAME, # Use the instance connection name from secrets
+        f"--port={PG_PORT}", # Specify the port (defaults to 5432 but good to be explicit)
+        # Consider adding --quiet if you don't want proxy logs in app logs,
+        # but seeing logs can be useful for debugging connection issues.
+        # Add --private-ip if your Cloud SQL instance has one and you want to use it
+    ]
+    print(f"Cloud SQL Auth Proxy command: {' '.join(command)}") # Log the command being run
+
+    # 3. Start the subprocess
+    # Use subprocess.Popen to run in the background
+    # Capture stdout/stderr for potential logging/debugging
+    try:
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True # Decode stdout/stderr as text
+        )
+        st.session_state['cloudsql_proxy_process'] = process
+        print("Cloud SQL Auth Proxy subprocess started.")
+
+        # Give the proxy a moment to start up
+        time.sleep(2) # Adjust sleep time if needed
+
+        # Check if the process is still running (0 means running, None means terminated)
+        if process.poll() is not None:
+             # Proxy failed to start, read stderr for errors
+             stdout, stderr = process.communicate()
+             st.error(f"Cloud SQL Auth Proxy failed to start or terminated unexpectedly (Return code: {process.returncode}).")
+             st.text(f"Proxy STDOUT:\n{stdout}")
+             st.text(f"Proxy STDERR:\n{stderr}")
+             # Clean up the temp file
+             if st.session_state['cloudsql_temp_key_path'] and os.path.exists(st.session_state['cloudsql_temp_key_path']):
+                 os.unlink(st.session_state['cloudsql_temp_key_path'])
+                 st.session_state['cloudsql_temp_key_path'] = None
+             st.session_state['cloudsql_proxy_process'] = None # Reset state
+        else:
+             print("Cloud SQL Auth Proxy is running.")
+             # You might want to read the first few lines of stdout/stderr here too
+             # process.stdout.readline() etc.
+             pass # Proxy started successfully
+
+
+    except Exception as e:
+        st.error(f"An error occurred trying to start the Cloud SQL Auth Proxy subprocess: {e}")
+        # Clean up the temp file on failure
+        if st.session_state['cloudsql_temp_key_path'] and os.path.exists(st.session_state['cloudsql_temp_key_path']):
+            os.unlink(st.session_state['cloudsql_temp_key_path'])
+            st.session_state['cloudsql_temp_key_path'] = None
+        st.session_state['cloudsql_proxy_process'] = None
+
+
+# --- Call the function to start the proxy early in your script ---
+# This ensures it runs when the app container starts or reruns without a cached proxy
+if st.session_state['cloudsql_proxy_process'] is None:
+     start_cloudsql_proxy()
+     # Optional: Rerun the app once after starting the proxy to ensure connection
+     # st.rerun() # Might be useful if the first connection attempt fails
 
 # --- Initialize Vertex AI and Embedding Model (cached) ---
 @st.cache_resource
@@ -82,21 +208,33 @@ chat_model = get_generative_model()
 @st.cache_resource # Cache the connection to reuse it across interactions
 def get_db_connection():
     """Establishes and returns a database connection."""
+    # Ensure proxy is running before attempting connection
+    if st.session_state['cloudsql_proxy_process'] is None or st.session_state['cloudsql_proxy_process'].poll() is not None:
+         st.error("Cloud SQL Auth Proxy is not running. Cannot connect to database.")
+         return None # Or raise an exception
+
     try:
+        print(f"Attempting database connection to {PG_HOST}:{PG_PORT}...")
         conn = psycopg2.connect(
-            host=PG_HOST,
+            host=PG_HOST, # This should be 127.0.0.1 now
             database=PG_DATABASE,
             user=PG_USER,
             password=PG_PASSWORD,
-            port=PG_PORT
+            port=PG_PORT # This should be 5432 now
+            # sslmode is not strictly needed when connecting to localhost proxy
         )
         # Register the vector type with psycopg2 using pgvector library
-        register_vector(conn) # Uncommented this line
+        register_vector(conn)
         print("pgvector.psycopg2.register_vector called.")
+        print("Database connection successful!")
         return conn
     except Exception as e:
-        st.error(f"Error connecting to database: {e}")
+        st.error(f"Error connecting to database (check proxy status and connection details): {e}")
+        # Consider trying to read proxy logs here if connection fails
+        # st.text("Attempting to get proxy logs...")
+        # st.text(get_proxy_logs())
         return None
+
 
 # Commented out the log_message function as requested
 # def log_message(company_id, role, content):
