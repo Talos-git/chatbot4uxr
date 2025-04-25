@@ -8,6 +8,47 @@ import datetime
 import os
 import time # Used for potential delays if needed
 
+# --- Google Cloud Authentication (using JSON key from secret) ---
+# This should ideally run BEFORE any Google Cloud client initialization
+# ONLY do this if you are NOT using Workload Identity Federation
+
+# Check if the JSON key secret exists
+if "GCP_CREDENTIALS_JSON" in st.secrets:
+    try:
+        # Read the JSON content from secrets
+        gcp_credentials_json_content = st.secrets["GCP_CREDENTIALS_JSON"]
+
+        # Create a temporary file to store the credentials
+        # Use /tmp as it's typically writable in container environments
+        # The file will be automatically deleted when the file object is closed
+        # or the program exits, but it's safest to ensure cleanup if possible
+        # However, for Streamlit app lifecycle, a temporary file is usually fine.
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as tmp_file:
+             tmp_file.write(gcp_credentials_json_content)
+             temp_file_path = tmp_file.name
+
+        # Set the GOOGLE_APPLICATION_CREDENTIALS environment variable
+        # Google client libraries will look for this variable
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp_file_path
+        print(f"GOOGLE_APPLICATION_CREDENTIALS set to temporary file: {temp_file_path}")
+
+        # Optional: Add cleanup code - careful with Streamlit's rerun mechanism
+        # A simple approach might be a try...finally block around the main app logic
+        # or relying on the temp file being in /tmp which gets cleaned up
+        # periodically or on container restart. For simplicity here, we omit explicit cleanup.
+
+    except Exception as e:
+        st.error(f"Error setting up Google Cloud credentials from secret: {e}")
+        # Decide if you want to stop here or try to proceed without credentials
+        # st.stop() # Uncomment to stop if credentials fail
+
+else:
+    # Handle the case where the secret is missing
+    # This message will appear if you didn't set the secret in Streamlit Cloud
+    print("GCP_CREDENTIALS_JSON secret not found. Google Cloud client libraries may not authenticate.")
+    # Decide if you want to show an error or warning in the UI if the secret is missing
+    # st.warning("Google Cloud credentials secret is not set.")
+
 # Import Vertex AI libraries for embedding
 import vertexai
 from vertexai.language_models import TextEmbeddingModel
