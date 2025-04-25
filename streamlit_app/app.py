@@ -165,9 +165,6 @@ def start_cloudsql_proxy():
 # --- Call the function to start the proxy early in your script ---
 # This ensures it runs when the app container starts or reruns without a cached proxy
 if st.session_state['cloudsql_proxy_process'] is None:
-     print("→ cwd contents:", os.listdir("."))
-     print("→ proxy exists?", os.path.exists(proxy_executable))  
-     print("→ proxy executable?", os.access(proxy_executable, os.X_OK))
      start_cloudsql_proxy()
      # Optional: Rerun the app once after starting the proxy to ensure connection
      # st.rerun() # Might be useful if the first connection attempt fails
