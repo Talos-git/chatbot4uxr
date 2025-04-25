@@ -8,6 +8,8 @@ import datetime
 import os
 import tempfile
 import time # Used for potential delays if needed
+from google.oauth2 import service_account
+import json
 
 # --- Streamlit Page Configuration ---
 # This must be the first Streamlit command
@@ -19,6 +21,10 @@ from vertexai.language_models import TextEmbeddingModel
 
 # Import pgvector for psycopg2 type handling
 from pgvector.psycopg2 import register_vector # Import the registration function
+
+# Load the SA JSON from Streamlit secrets
+sa_info = json.loads(st.secrets["gcp"]["service_account"])
+creds = service_account.Credentials.from_service_account_info(sa_info)
 
 # --- Configuration ---
 # Access secrets from .streamlit/secrets.toml
@@ -46,7 +52,7 @@ RETRIEVAL_LIMIT = 50 # Number of relevant snippets to retrieve from EACH source 
 def initialize_vertex_ai_and_embedding_model():
     """Initializes Vertex AI and loads the embedding model."""
     try:
-        vertexai.init(project=GOOGLE_CLOUD_PROJECT, location=GOOGLE_CLOUD_LOCATION)
+        vertexai.init(project=GOOGLE_CLOUD_PROJECT, location=GOOGLE_CLOUD_LOCATION, credentials=creds)
         print(f"Vertex AI initialized for project '{GOOGLE_CLOUD_PROJECT}' in location '{GOOGLE_CLOUD_LOCATION}'.")
         embedding_model = TextEmbeddingModel.from_pretrained(EMBEDDING_MODEL_NAME)
         print(f"Embedding model '{EMBEDDING_MODEL_NAME}' loaded.")
