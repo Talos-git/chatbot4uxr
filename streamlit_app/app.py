@@ -159,7 +159,10 @@ def start_cloudsql_proxy(sa_info_attrdict):
     # Use --credentials-file to point to the temporary key file containing the SA key
     command = [
         proxy_executable,
-        f"{PG_INSTANCE_CONNECTION_NAME}=tcp:{PG_HOST_APP}:{PG_PORT}", # e.g., "my-project:us-central1:my-instance=tcp:127.0.0.1:5432"
+        PG_INSTANCE_CONNECTION_NAME,
+        "--address", PG_HOST_APP,
+        "--port", str(PG_PORT),
+        #f"{PG_INSTANCE_CONNECTION_NAME}=tcp:{PG_HOST_APP}:{PG_PORT}", # e.g., "my-project:us-central1:my-instance=tcp:127.0.0.1:5432"
         "--auto-iam-authn",
         f"--credentials-file={st.session_state['cloudsql_temp_key_path']}",
         # "-verbose", # Optional: Uncomment for more proxy logging
