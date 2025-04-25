@@ -1,8 +1,5 @@
 streamlit
-psycopg2
+psycopg2-binary  # Use the binary version for easier installation
 google-generativeai
 numpy
-textwrap
-datetime
-os
-textwrap
+# Removed built-in modules: textwrap, datetime, os
