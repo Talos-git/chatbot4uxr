@@ -1,19 +1,19 @@
 import streamlit as st
 import psycopg2
 from psycopg2 import extras
-import google.generativeai as genai # Still used for the chat model
+import google.generativeai as genai
 import numpy as np
 import textwrap
 import datetime
 import os
 import tempfile
-import time # Used for potential delays if needed
+import time
 import subprocess
 import sys
-from google.oauth2 import service_account
+import json # Need json to dump the SA key dict
+import atexit # Import atexit for cleanup
 
 # --- Streamlit Page Configuration ---
-# This must be the first Streamlit command
 st.set_page_config(page_title="Agent Context Summarizer (DB RAG)", layout="wide")
 
 # Import Vertex AI libraries for embedding
@@ -21,167 +21,247 @@ import vertexai
 from vertexai.language_models import TextEmbeddingModel
 
 # Import pgvector for psycopg2 type handling
-from pgvector.psycopg2 import register_vector # Import the registration function
-
-# Load the SA JSON from Streamlit secrets
-creds = service_account.Credentials.from_service_account_info(st.secrets["gcp"])
+from pgvector.psycopg2 import register_vector
 
 # --- Configuration ---
+# Load the SA JSON from Streamlit secrets
 # Access secrets from .streamlit/secrets.toml
-# Ensure these secrets are configured correctly
 GOOGLE_CLOUD_PROJECT = st.secrets["GOOGLE_CLOUD_PROJECT"]
 GOOGLE_CLOUD_LOCATION = st.secrets["GOOGLE_CLOUD_LOCATION"]
-PG_HOST = st.secrets["postgres"]["host"]
-PG_INSTANCE_CONNECTION_NAME = st.secrets["postgres"]["instance_connection_name"] # Add this secret
+# The proxy will connect to 127.0.0.1 using PG_PORT
+# The application connects to the proxy at 127.0.0.1:PG_PORT
+# So PG_HOST should effectively be '127.0.0.1' for the application connection
+PG_HOST_APP = '127.0.0.1' # Application connects to localhost proxy
+PG_PORT = st.secrets["postgres"]["port"] # Local port the proxy listens on (e.g., 5432)
+
+# Database connection details used by the *application* connecting to the proxy
 PG_DATABASE = st.secrets["postgres"]["database"]
 PG_USER = st.secrets["postgres"]["user"]
-PG_PASSWORD = st.secrets["postgres"]["password"]
-PG_PORT = st.secrets["postgres"]["port"]
+# PG_PASSWORD is NOT needed by the application when using IAM authentication via proxy
+# If your DB user requires a password *even with IAM auth*, you might need it,
+# but typically you configure the Cloud SQL user to use IAM.
+# PG_PASSWORD = st.secrets["postgres"]["password"]
+
+# Cloud SQL Instance Connection Name (used by the proxy)
+PG_INSTANCE_CONNECTION_NAME = st.secrets["postgres"]["instance_connection_name"]
+
 
 # LLM Configuration (for chat response)
-# Using gemini-1.5-flash-latest for chat
 LLM_MODEL_NAME = 'gemini-2.0-flash'
+GENAI_API_KEY = st.secrets["GEMINI_API_KEY"] # Assume Gemini API Key is in secrets
 
 # Embedding Model Configuration (using Vertex AI)
-EMBEDDING_MODEL_NAME = "text-embedding-005" # Use the model from your script
-EMBEDDING_DIMENSION = 768 # Dimension for this model
-RETRIEVAL_LIMIT = 50 # Number of relevant snippets to retrieve from EACH source (messages, notes, tickets)
+EMBEDDING_MODEL_NAME = "text-embedding-005"
+EMBEDDING_DIMENSION = 768
+RETRIEVAL_LIMIT = 50
 
 # --- Cloud SQL Auth Proxy Setup ---
-# Use session state to ensure the proxy is only started once
+# Use session state to manage the proxy process and temp file path across reruns
 if 'cloudsql_proxy_process' not in st.session_state:
     st.session_state['cloudsql_proxy_process'] = None
 if 'cloudsql_temp_key_path' not in st.session_state:
      st.session_state['cloudsql_temp_key_path'] = None
 
+def cleanup_cloudsql_proxy():
+    """Terminates the Cloud SQL Auth Proxy process and cleans up temp key file."""
+    print("Running Cloud SQL Proxy cleanup...")
+    # Terminate the proxy process if it's running
+    if st.session_state.get('cloudsql_proxy_process') is not None:
+        process = st.session_state['cloudsql_proxy_process']
+        if process.poll() is None: # Check if process is still running
+            print(f"Terminating Cloud SQL Proxy process (PID: {process.pid})...")
+            try:
+                process.terminate()
+                # Give it a moment to exit gracefully
+                process.wait(timeout=5)
+                print("Cloud SQL Proxy process terminated.")
+            except subprocess.TimeoutExpired:
+                 print("Cloud SQL Proxy did not terminate gracefully, killing it.")
+                 process.kill()
+            except Exception as e:
+                print(f"Error terminating proxy process: {e}")
+        st.session_state['cloudsql_proxy_process'] = None # Reset state
+
+    # Clean up the temporary service account key file
+    temp_key_path = st.session_state.get('cloudsql_temp_key_path')
+    if temp_key_path and os.path.exists(temp_key_path):
+        print(f"Deleting temporary service account key file: {temp_key_path}")
+        try:
+            os.unlink(temp_key_path)
+            print("Temporary key file deleted.")
+        except Exception as e:
+            print(f"Error deleting temporary key file {temp_key_path}: {e}")
+        st.session_state['cloudsql_temp_key_path'] = None # Reset state
+    print("Cloud SQL Proxy cleanup finished.")
+
+# Register the cleanup function to run when the script exits
+# Note: atexit is not guaranteed to run in all environments/exit scenarios,
+# but it's a good practice for basic cleanup.
+atexit.register(cleanup_cloudsql_proxy)
+
+
 def start_cloudsql_proxy():
     """Starts the Cloud SQL Auth Proxy as a subprocess."""
-    if st.session_state['cloudsql_proxy_process'] is not None:
-        # Proxy is already running
-        print("Cloud SQL Auth Proxy is already running.")
-        return
+    # Check if proxy is already running based on session state
+    if st.session_state.get('cloudsql_proxy_process') is not None:
+        # Check if the process is actually still alive
+        if st.session_state['cloudsql_proxy_process'].poll() is None:
+             print("Cloud SQL Auth Proxy is already running and appears healthy.")
+             return # Proxy is running, do nothing
+        else:
+             # Process terminated unexpectedly, clean up state
+             print("Cloud SQL Auth Proxy process found in state but is not running. Cleaning up state.")
+             cleanup_cloudsql_proxy() # Clean up old state before restarting
 
     print("Attempting to start Cloud SQL Auth Proxy...")
 
+    # --- 1. Get Service Account key from secrets and save to a temporary file ---
     try:
-        # 1. Get Service Account key from secrets and save to a temporary file
         # We need the dictionary representation of the secret for json.dump
         sa_key_dict = dict(st.secrets["gcp"])
 
         # Create a temporary file to store the key securely
         # delete=False means we are responsible for deleting it
-        temp_key_file = tempfile.NamedTemporaryFile(delete=False, suffix=".json", mode='w+')
-        temp_key_file_path = temp_key_file.name
-        # Write the JSON content to the temporary file
-        import json
-        json.dump(sa_key_dict, temp_key_file)
-        temp_key_file.close() # Close the file so the proxy can read it
+        # Use mkstemp for better security than NamedTemporaryFile(delete=False)
+        fd, temp_key_file_path = tempfile.mkstemp(suffix=".json", text=True)
+        with os.fdopen(fd, 'w') as tmp:
+             json.dump(sa_key_dict, tmp)
 
         st.session_state['cloudsql_temp_key_path'] = temp_key_file_path
         print(f"Service account key saved to temporary file: {temp_key_file_path}")
 
     except Exception as e:
         st.error(f"Failed to save service account key to temporary file for Cloud SQL Proxy: {e}")
-        # Clean up the temp file if creation failed partway
-        if 'cloudsql_temp_key_path' in st.session_state and st.session_state['cloudsql_temp_key_path'] and os.path.exists(st.session_state['cloudsql_temp_key_path']):
-             os.unlink(st.session_state['cloudsql_temp_key_path'])
-             st.session_state['cloudsql_temp_key_path'] = None
+        # Cleanup already handled by atexit or will be handled before retry
         return
 
 
-    # 2. Define the proxy command
-    proxy_executable = "./cloud-sql-proxy" # Assuming you put the executable in the root dir
+    # --- 2. Define the proxy command ---
+    # Assuming you put the executable in the root dir or it's in the PATH
+    proxy_executable = "./cloud-sql-proxy"
 
     # Check if the executable exists and is runnable
     if not os.path.exists(proxy_executable):
          st.error(f"Cloud SQL Auth Proxy executable not found at {proxy_executable}. Make sure 'cloud-sql-proxy' file is in your repo root and is executable (chmod +x).")
-         # Clean up the temp file
-         if st.session_state['cloudsql_temp_key_path'] and os.path.exists(st.session_state['cloudsql_temp_key_path']):
-             os.unlink(st.session_state['cloudsql_temp_key_path'])
-             st.session_state['cloudsql_temp_key_path'] = None
+         cleanup_cloudsql_proxy() # Clean up the temp file
          return
     if not os.access(proxy_executable, os.X_OK):
          st.error(f"Cloud SQL Auth Proxy executable at {proxy_executable} is not executable. Run 'chmod +x ./cloud-sql-proxy' in your repository.")
-         # Clean up the temp file
-         if st.session_state['cloudsql_temp_key_path'] and os.path.exists(st.session_state['cloudsql_temp_key_path']):
-             os.unlink(st.session_state['cloudsql_temp_key_path'])
-             st.session_state['cloudsql_temp_key_path'] = None
+         cleanup_cloudsql_proxy() # Clean up the temp file
          return
 
 
+    # Construct the command using the correct syntax (positional instance arg)
+    # Use --auto-iam-authn for IAM login
     command = [
         proxy_executable,
-        # Specify the instance connection string directly as an argument
-        f"{PG_INSTANCE_CONNECTION_NAME}=tcp:127.0.0.1:{PG_PORT}",
-        # Use the correct flag for IAM login from the help output
-        "--auto-iam-authn",
+        f"{PG_INSTANCE_CONNECTION_NAME}=tcp:{PG_HOST_APP}:{PG_PORT}",
+        "--auto-iam-authn", # Use the correct flag for IAM authentication
+        # "-verbose", # Optional: Uncomment for more proxy logging
+        # Use --credentials-file to point to the temporary key file
+        f"--credentials-file={st.session_state['cloudsql_temp_key_path']}"
     ]
     print(f"Cloud SQL Auth Proxy command: {' '.join(command)}") # Log the command being run
 
-    # 3. Start the subprocess
+    # --- 3. Start the subprocess ---
     # Use subprocess.Popen to run in the background
-    # Capture stdout/stderr for potential logging/debugging
+    # Capture stdout/stderr to check for immediate errors
     try:
         process = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True # Decode stdout/stderr as text
+            # Consider setting a working directory if needed: cwd="."
         )
         st.session_state['cloudsql_proxy_process'] = process
-        print("Cloud SQL Auth Proxy subprocess started.")
+        print(f"Cloud SQL Auth Proxy subprocess started with PID: {process.pid}")
 
-        # Give the proxy a moment to start up
-        time.sleep(10) # Adjust sleep time if needed
+        # Give the proxy a moment to start up and check for immediate failure
+        # A short sleep + poll check is more robust than just sleep
+        startup_check_time = 5 # seconds
+        start_time = time.time()
+        while (time.time() - start_time) < startup_check_time:
+             if process.poll() is not None: # Check if process has exited
+                  # Proxy failed to start, read stderr for errors
+                  stdout, stderr = process.communicate() # Read remaining output
+                  st.error(f"Cloud SQL Auth Proxy failed to start or terminated unexpectedly (Return code: {process.returncode}).")
+                  st.text(f"Proxy STDOUT:\n{stdout}")
+                  st.text(f"Proxy STDERR:\n{stderr}")
+                  cleanup_cloudsql_proxy() # Clean up the temp file and reset state
+                  return # Exit the startup function
 
-        # Check if the process is still running (0 means running, None means terminated)
-        if process.poll() is not None:
-             # Proxy failed to start, read stderr for errors
+             time.sleep(0.1) # Small sleep before checking again
+
+        # If we reached here, the process is likely still running after the check time
+        if process.poll() is None:
+             print("Cloud SQL Auth Proxy seems to be running after initial check.")
+             # You might want to read the first few lines of stdout/stderr here too
+             # to see startup messages, but be careful not to block.
+             # Example: first_line = process.stderr.readline()
+             pass # Proxy started successfully
+        else:
+             # This case should ideally be caught by the loop above, but as a fallback
+             print("Cloud SQL Auth Proxy process check after sleep found it exited.")
              stdout, stderr = process.communicate()
-             st.error(f"Cloud SQL Auth Proxy failed to start or terminated unexpectedly (Return code: {process.returncode}).")
+             st.error(f"Cloud SQL Auth Proxy failed check after startup time (Return code: {process.returncode}).")
              st.text(f"Proxy STDOUT:\n{stdout}")
              st.text(f"Proxy STDERR:\n{stderr}")
-             # Clean up the temp file
-             if st.session_state['cloudsql_temp_key_path'] and os.path.exists(st.session_state['cloudsql_temp_key_path']):
-                 os.unlink(st.session_state['cloudsql_temp_key_path'])
-                 st.session_state['cloudsql_temp_key_path'] = None
-             st.session_state['cloudsql_proxy_process'] = None # Reset state
-        else:
-             print("Cloud SQL Auth Proxy is running.")
-             # You might want to read the first few lines of stdout/stderr here too
-             # process.stdout.readline() etc.
-             pass # Proxy started successfully
+             cleanup_cloudsql_proxy() # Clean up
+             return
 
 
     except Exception as e:
         st.error(f"An error occurred trying to start the Cloud SQL Auth Proxy subprocess: {e}")
-        # Clean up the temp file on failure
-        if st.session_state['cloudsql_temp_key_path'] and os.path.exists(st.session_state['cloudsql_temp_key_path']):
-            os.unlink(st.session_state['cloudsql_temp_key_path'])
-            st.session_state['cloudsql_temp_key_path'] = None
-        st.session_state['cloudsql_proxy_process'] = None
+        cleanup_cloudsql_proxy() # Clean up on failure
+        return
 
+    # Add a small delay after successful apparent start before attempting DB connection
+    # to give the proxy time to open the port
+    time.sleep(2) # Adjust if needed
 
 # --- Call the function to start the proxy early in your script ---
 # This ensures it runs when the app container starts or reruns without a cached proxy
+# Use a button or initial load check to trigger it
 if st.session_state['cloudsql_proxy_process'] is None:
+     # You could add a button here, or just auto-start on first load attempt
+     # if st.button("Start Cloud SQL Proxy"):
      start_cloudsql_proxy()
-     # Optional: Rerun the app once after starting the proxy to ensure connection
-     # st.rerun() # Might be useful if the first connection attempt fails
+     # Optional: st.rerun() could be used after starting the proxy
+     # if you want the script to restart and potentially connect immediately.
+     # However, caching functions help avoid needing a full rerun.
+
 
 # --- Initialize Vertex AI and Embedding Model (cached) ---
 @st.cache_resource
 def initialize_vertex_ai_and_embedding_model():
     """Initializes Vertex AI and loads the embedding model."""
     try:
-        vertexai.init(project=GOOGLE_CLOUD_PROJECT, location=GOOGLE_CLOUD_LOCATION, credentials=creds)
+        # Use credentials object directly if loaded via google.oauth2
+        vertexai.init(project=GOOGLE_CLOUD_PROJECT, location=GOOGLE_CLOUD_LOCATION, credentials=st.secrets.get("gcp_credentials_object"))
         print(f"Vertex AI initialized for project '{GOOGLE_CLOUD_PROJECT}' in location '{GOOGLE_CLOUD_LOCATION}'.")
         embedding_model = TextEmbeddingModel.from_pretrained(EMBEDDING_MODEL_NAME)
         print(f"Embedding model '{EMBEDDING_MODEL_NAME}' loaded.")
         return embedding_model
     except Exception as e:
         st.error(f"Error initializing Vertex AI or loading embedding model: {e}")
-        st.stop() # Stop if embedding model cannot be loaded
+        # Provide more context on potential causes
+        st.info("Please ensure:")
+        st.info("- `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION` are correct in secrets.")
+        st.info("- Your service account key JSON in `secrets.toml` is valid under `[gcp]`.")
+        st.info("- The service account has the `Vertex AI User` role.")
+        st.stop()
+
+# Load the credentials object directly from secrets for Vertex AI initialization
+# Assuming your secrets structure saves the loaded credentials object directly if possible
+# If not, load it here from the dict: service_account.Credentials.from_service_account_info(st.secrets["gcp"])
+# Let's adjust the vertexai.init call to use the loaded object:
+try:
+    st.secrets["gcp_credentials_object"] = service_account.Credentials.from_service_account_info(st.secrets["gcp"])
+except Exception as e:
+     st.error(f"Failed to load GCP service account credentials from secrets: {e}")
+     st.stop()
+
 
 embedding_model = initialize_vertex_ai_and_embedding_model()
 
@@ -191,37 +271,48 @@ embedding_model = initialize_vertex_ai_and_embedding_model()
 def get_generative_model():
      """Initializes and returns the generative model for chat."""
      try:
-        # Using gemini-1.5-flash-latest for chat
-        # Ensure your API key is set in Streamlit secrets for genai
-        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+        genai.configure(api_key=GENAI_API_KEY)
+        # Check if API key is empty
+        if not GENAI_API_KEY:
+             st.warning("GEMINI_API_KEY is not set in Streamlit secrets.")
+             return None
         return genai.GenerativeModel(LLM_MODEL_NAME)
      except Exception as e:
          st.error(f"Error configuring Gemini API for chat: {e}")
          st.stop()
 
 chat_model = get_generative_model()
+# Add a check here if the chat model failed to initialize
+if chat_model is None:
+    st.error("Chat model initialization failed. Please check API key and configuration.")
+    # Decide if you want to stop the app here
+    # st.stop()
 
 
 # --- Database Functions ---
 
-@st.cache_resource # Cache the connection to reuse it across interactions
-def get_db_connection():
+# Use st.cache_resource to cache the connection to reuse it across interactions
+# Hash the important connection parameters so a change triggers recaching
+@st.cache_resource(hash_funcs={
+    type(st.session_state): lambda _: None, # Don't hash the whole session state
+    subprocess.Popen: lambda _: None # Don't hash the process object
+    }, show_spinner="Connecting to database...")
+def get_db_connection(conn_params):
     """Establishes and returns a database connection."""
     # Ensure proxy is running before attempting connection
-    if st.session_state['cloudsql_proxy_process'] is None or st.session_state['cloudsql_proxy_process'].poll() is not None:
-         st.error("Cloud SQL Auth Proxy is not running. Cannot connect to database.")
-         return None # Or raise an exception
+    # This check happens *within* the cached function the first time it's called
+    # or if params change. Subsequent calls within the same session state rerun
+    # hit the cache, but the proxy status should be checked before *using* the connection.
+    if st.session_state.get('cloudsql_proxy_process') is None or \
+       st.session_state['cloudsql_proxy_process'].poll() is not None:
+         st.error("Cloud SQL Auth Proxy is not running or has terminated. Cannot connect to database.")
+         # You could attempt to restart it here, but be careful with infinite loops
+         # start_cloudsql_proxy()
+         return None # Indicate failure
 
     try:
-        print(f"Attempting database connection to {PG_HOST}:{PG_PORT}...")
-        conn = psycopg2.connect(
-            host=PG_HOST, # This should be 127.0.0.1 now
-            database=PG_DATABASE,
-            user=PG_USER,
-            password=PG_PASSWORD,
-            port=PG_PORT # This should be 5432 now
-            # sslmode is not strictly needed when connecting to localhost proxy
-        )
+        print(f"Attempting database connection to {conn_params['host']}:{conn_params['port']}...")
+        conn = psycopg2.connect(**conn_params)
         # Register the vector type with psycopg2 using pgvector library
         register_vector(conn)
         print("pgvector.psycopg2.register_vector called.")
@@ -229,75 +320,77 @@ def get_db_connection():
         return conn
     except Exception as e:
         st.error(f"Error connecting to database (check proxy status and connection details): {e}")
-        # Consider trying to read proxy logs here if connection fails
-        # st.text("Attempting to get proxy logs...")
-        # st.text(get_proxy_logs())
+        # Attempt to read proxy logs if connection fails (might not get much here immediately)
+        # print("\n--- Attempting to read recent proxy stderr ---")
+        # try:
+        #     proxy_stderr = st.session_state['cloudsql_proxy_process'].stderr
+        #     if proxy_stderr:
+        #          # This might only get output buffered *up to this point*
+        #          # Reading too much might consume output meant for the console
+        #          recent_output = proxy_stderr.read()
+        #          print(recent_output)
+        # except Exception as log_e:
+        #     print(f"Error reading proxy stderr: {log_e}")
         return None
+
+# Prepare connection parameters dictionary to pass to the cached function
+# This includes only the parameters necessary for psycopg2.connect
+db_connection_params = {
+    "host": PG_HOST_APP, # Connect to the proxy's local address
+    "database": PG_DATABASE,
+    "user": PG_USER,
+    "port": PG_PORT, # Connect to the proxy's local port
+    # "password": PG_PASSWORD # Omit password when using IAM auth via proxy
+}
+
+conn = get_db_connection(db_connection_params)
+
+# Add a check if the database connection failed
+if conn is None:
+    st.error("Database connection failed. Please check proxy and database configuration.")
+    # Decide if you want to stop the app here or allow loading static parts
+    # st.stop()
 
 
 # Commented out the log_message function as requested
-# def log_message(company_id, role, content):
-#     """Logs a message to the past_messages table."""
-#     conn = get_db_connection()
-#     if conn is None:
-#         return
-
-#     try:
-#         with conn.cursor() as cur:
-#             # Generate embedding for the message content (this might be redundant if you have a DB trigger)
-#             # If you rely solely on the script or a trigger, you can remove embedding generation here.
-#             # However, embedding new messages as they come in is best practice for real-time RAG.
-#             # Let's generate it here for real-time context update.
-#             message_embedding = generate_embedding_sync(content) # Use sync embedding function
-
-#             if message_embedding is None:
-#                  st.warning(f"Could not generate embedding for message. Logging without embedding.")
-#                  embedding_vector_str = None
-#             else:
-#                  embedding_vector_str = message_embedding # psycopg2 handles list -> PG vector
-
-#             # Assuming 'past_messages' table with columns: id, companyId, role, text, createdAt, embedding
-#             # Generate a unique ID (UUID recommended in real app)
-#             message_id = str(datetime.datetime.now().timestamp()).replace('.', '') # Simple timestamp-based ID
-
-#             cur.execute(
-#                 'INSERT INTO past_messages (id, "companyId", role, text, "createdAt", embedding) VALUES (%s, %s, %s, %s, %s, %s)',
-#                 (message_id, company_id, role, content, datetime.datetime.now(), embedding_vector_str)
-#             )
-#             conn.commit()
-#     except Exception as e:
-#         st.error(f"Error logging message to database: {e}")
-#         if conn:
-#             conn.rollback()
+# def log_message(company_id, role, content): ...
 
 # --- Embedding Function (Synchronous for app.py) ---
-# This is a synchronous version for use within the Streamlit app's request/response cycle
 def generate_embedding_sync(text):
     """Generates an embedding for a single text using the Vertex AI model synchronously."""
+    # Add a check if embedding model failed to load
+    if embedding_model is None:
+        st.error("Embedding model is not loaded. Cannot generate embeddings.")
+        return None
+
     if not text or not str(text).strip():
-         return np.zeros(EMBEDDING_DIMENSION).tolist()
+         return np.zeros(EMBEDDING_DIMENSION).tolist() # Return zero vector for empty/whitespace
 
     try:
-        # Use the loaded embedding model
-        embeddings = embedding_model.get_embeddings([str(text)]) # get_embeddings expects a list
-        return embeddings[0].values # Return the list of floats
+        embeddings = embedding_model.get_embeddings([str(text)])
+        return embeddings[0].values
     except Exception as e:
         st.error(f"Error generating embedding for text: '{str(text)[:50]}...' - {e}")
-        # Depending on severity, you might want to raise an exception
-        return None # Or handle gracefully
+        # Provide more context
+        st.info("Please ensure:")
+        st.info("- `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION` are correct.")
+        st.info("- The service account key JSON is valid and has `Vertex AI User` role.")
+        st.info("- The text-embedding-005 model is available in your region.")
+        return None
 
 
 # --- Context Retrieval and Formatting Functions ---
 
 def get_general_company_context(company_id):
     """Retrieves general context for a given company_id from structured tables."""
-    conn = get_db_connection()
+    conn = get_db_connection(db_connection_params) # Get connection using the cached function
     if conn is None:
-        return None
+        return None # Cannot get context without connection
 
     context_data = {}
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+            # ... (rest of your context retrieval logic) ...
             # 1. Company Information (using 'id' as PK)
             cur.execute('SELECT * FROM companies WHERE id = %s', (company_id,))
             company_info = cur.fetchone()
@@ -311,7 +404,7 @@ def get_general_company_context(company_id):
             cur.execute('SELECT * FROM "fiscalYears" WHERE "companyId" = %s ORDER BY "endDate" DESC', (company_id,))
             context_data['fiscal_years'] = cur.fetchall()
 
-            # Add other structured data retrieval here if needed (e.g., key contacts from a users table if you re-add one)
+            # Add other structured data retrieval here if needed (e.g., key contacts)
 
         return context_data
 
@@ -319,6 +412,7 @@ def get_general_company_context(company_id):
         st.error(f"Error retrieving general company context from database: {e}")
         return None
 
+# ... (format_general_company_context_for_llm remains the same) ...
 def format_general_company_context_for_llm(context_data):
     """Formats the general retrieved database context into a string for the LLM prompt."""
     if not context_data:
@@ -344,6 +438,8 @@ def format_general_company_context_for_llm(context_data):
     # Financial Years
     if 'fiscal_years' in context_data and context_data['fiscal_years']:
         formatted_string += "Fiscal Years:\n"
+        # Ensure the dictionary values are accessed correctly (e.g., .get() or ['key'])
+        # and handle potential non-string types for printing
         for fy in context_data['fiscal_years']:
              # Adjust formatting based on your schema (e.g., id, endDate, rawData)
             formatted_string += f"- ID: {fy.get('id', 'N/A')}, End Date: {fy.get('endDate', 'N/A')}, Raw Data Snippet: {str(fy.get('rawData', 'N/A'))[:100]}...\n" # Truncate raw data
@@ -353,34 +449,38 @@ def format_general_company_context_for_llm(context_data):
 
     return formatted_string
 
+
 def retrieve_relevant_snippets_rag(company_id, query_embedding, limit=RETRIEVAL_LIMIT):
-    conn = get_db_connection()
+    conn = get_db_connection(db_connection_params) # Get connection using the cached function
     if conn is None:
+        return [] # Cannot retrieve snippets without connection
+
+    # Add check if query embedding failed
+    if query_embedding is None:
+        st.error("Query embedding is missing. Cannot perform RAG search.")
         return []
 
     retrieved_snippets = []
 
-    # Create a version of the company_id without the comma for past_messages query
-    # Assumes the input company_id string might contain a comma
-    company_id_for_past_messages = company_id.replace(',', '')
-
-    # Use the original company_id (which might contain a comma) for notes and tickets query
-    # Assumes notes and tickets tables store companyId with the comma
-    company_id_for_notes_tickets = company_id # Use the original input value
+    # Adjust company_id variable usage based on your schema details
+    # Assuming past_messages uses ID without comma, notes/tickets use ID with comma
+    company_id_for_past_messages = company_id.replace(',', '') if isinstance(company_id, str) else str(company_id)
+    company_id_for_notes_tickets = company_id # Use the original value
 
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
             # --- Retrieve from past_messages ---
             print(f"Querying past_messages for companyId (no comma): '{company_id_for_past_messages}'")
+            # Ensure the column name 'message_from_who' is correct if it exists
             cur.execute(
                 """
-                SELECT id, "createdAt", message_from_who, text
+                SELECT id, "createdAt", 'unknown' as message_from_who, text -- Using 'unknown' if message_from_who column doesn't exist
                 FROM past_messages
                 WHERE "companyId" = %s AND embedding IS NOT NULL
-                ORDER BY embedding <=> %s::vector -- Explicit cast here
+                ORDER BY embedding <=> %s::vector
                 LIMIT %s;
                 """,
-                (company_id_for_past_messages, query_embedding, limit) # Use the variable WITHOUT the comma here
+                (company_id_for_past_messages, query_embedding, limit)
             )
             messages_snippets = cur.fetchall()
             print(f"Retrieved {len(messages_snippets)} past messages for company {company_id}")
@@ -389,7 +489,7 @@ def retrieve_relevant_snippets_rag(company_id, query_embedding, limit=RETRIEVAL_
                      'source': 'past_message',
                      'id': snippet['id'],
                      'createdAt': snippet['createdAt'],
-                     'sender': snippet['message_from_who'],
+                     'sender': snippet.get('message_from_who', 'unknown'), # Use .get for safety
                      'content': snippet['text']
                  })
 
@@ -400,10 +500,10 @@ def retrieve_relevant_snippets_rag(company_id, query_embedding, limit=RETRIEVAL_
                 SELECT id, "createdAt", "lastModifiedByUserId", text
                 FROM notes
                 WHERE "companyId" = %s AND embedding IS NOT NULL
-                ORDER BY embedding <=> %s::vector -- Explicit cast here
+                ORDER BY embedding <=> %s::vector
                 LIMIT %s;
                 """,
-                (company_id_for_notes_tickets, query_embedding, limit) # Use the variable WITH the comma here
+                (company_id_for_notes_tickets, query_embedding, limit)
             )
             notes_snippets = cur.fetchall()
             print(f"Retrieved {len(notes_snippets)} notes for company {company_id}")
@@ -418,15 +518,16 @@ def retrieve_relevant_snippets_rag(company_id, query_embedding, limit=RETRIEVAL_
 
             # --- Retrieve from tickets ---
             print(f"Querying tickets for companyId (with comma): '{company_id_for_notes_tickets}'")
+            # Ensure 'name_embedding' exists and 'businessLine' column exists for description
             cur.execute(
                 """
                 SELECT id, "createdAt", name, status, "businessLine"
                 FROM tickets
-                WHERE "companyId" = %s AND name_embedding IS NOT NULL
-                ORDER BY name_embedding <=> %s::vector -- Explicit cast here
+                WHERE "companyId" = %s AND name_embedding IS NOT NULL -- Assuming name_embedding for RAG search
+                ORDER BY name_embedding <=> %s::vector
                 LIMIT %s;
                 """,
-                (company_id_for_notes_tickets, query_embedding, limit) # Use the variable WITH the comma here
+                (company_id_for_notes_tickets, query_embedding, limit)
             )
             tickets_snippets = cur.fetchall()
             print(f"Retrieved {len(tickets_snippets)} tickets for company {company_id}")
@@ -437,15 +538,19 @@ def retrieve_relevant_snippets_rag(company_id, query_embedding, limit=RETRIEVAL_
                      'createdAt': snippet['createdAt'],
                      'name': snippet['name'],
                      'status': snippet['status'],
-                     'description': snippet.get('businessLine')
+                     'description': snippet.get('businessLine', 'N/A') # Use .get for safety
                  })
 
         return retrieved_snippets
 
     except Exception as e:
         st.error(f"Error retrieving relevant snippets via RAG: {e}")
+        # Provide database connection status if known
+        if conn is None:
+             st.info("Database connection is not available for RAG retrieval.")
         return []
-    
+
+# ... (format_retrieved_snippets_for_llm remains the same) ...
 def format_retrieved_snippets_for_llm(snippets):
     """Formats retrieved snippets from RAG into a string for the LLM prompt."""
     if not snippets:
@@ -455,37 +560,43 @@ def format_retrieved_snippets_for_llm(snippets):
 
     # Sort snippets by date for better chronological flow if desired
     # Assuming 'createdAt' exists in all snippet types or handle missing dates
-    sorted_snippets = sorted(snippets, key=lambda x: x.get('createdAt', datetime.datetime.min))
+    # Use a robust key function that handles potential None or non-datetime types
+    sorted_snippets = sorted(snippets, key=lambda x: x.get('createdAt', datetime.datetime.min) if isinstance(x.get('createdAt'), datetime.datetime) else datetime.datetime.min)
+
 
     for snippet in sorted_snippets:
         source = snippet.get('source', 'Unknown Source')
         item_id = snippet.get('id', 'N/A')
         created_at = snippet.get('createdAt', 'N/A')
-        content = snippet.get('content', 'N/A')
+        content = snippet.get('content', 'N/A') # Using 'content' as a fallback if specific field is missing
 
+        # Adjust display based on source
         formatted_string += f"Source: {source} (ID: {item_id}, Created: {created_at})\n"
 
         if source == 'past_message':
              sender = snippet.get('sender', 'N/A')
+             content_text = snippet.get('content', 'N/A') # Assuming 'content' holds the message text
              formatted_string += f"  Sender: {sender}\n"
-             formatted_string += "  Content: " + textwrap.fill(content, width=80, subsequent_indent="  ") + "\n"
+             formatted_string += "  Content: " + textwrap.fill(str(content_text), width=80, subsequent_indent="  ") + "\n"
         elif source == 'note':
              author = snippet.get('author', 'N/A')
+             content_text = snippet.get('content', 'N/A') # Assuming 'content' holds the note text
              formatted_string += f"  Author: {author}\n"
-             formatted_string += "  Content: " + textwrap.fill(content, width=80, subsequent_indent="  ") + "\n"
+             formatted_string += "  Content: " + textwrap.fill(str(content_text), width=80, subsequent_indent="  ") + "\n"
         elif source == 'ticket':
              name = snippet.get('name', 'N/A')
              status = snippet.get('status', 'N/A')
              description = snippet.get('description', 'N/A')
-             formatted_string += f"  Name: {name}\n"
-             formatted_string += f"  Status: {status}\n"
+             # For tickets, combine relevant fields into the 'content' display
+             ticket_content_str = f"Name: {name}, Status: {status}"
              if description != 'N/A':
-                 formatted_string += "  Description: " + textwrap.fill(description, width=80, subsequent_indent="  ") + "\n"
-             # Note: For tickets, you might primarily embed/search the name/description,
-             # but retrieve/display other relevant ticket fields like status, assignee, etc.
+                  ticket_content_str += f", Description: {description}"
+             formatted_string += "  Details: " + textwrap.fill(ticket_content_str, width=80, subsequent_indent="  ") + "\n"
+             # Note: 'content' field in the ticket snippet dict might be unused,
+             # using the specific ticket fields for display.
         else:
              # Fallback for unknown sources
-             formatted_string += "  Content: " + textwrap.fill(content, width=80, subsequent_indent="  ") + "\n"
+             formatted_string += "  Content: " + textwrap.fill(str(content), width=80, subsequent_indent="  ") + "\n"
 
         formatted_string += "\n" # Add space between snippets
 
@@ -499,13 +610,12 @@ st.title("📊 Agent Context Summarizer (Database RAG)")
 st.markdown("Enter a Company ID to load context and enable RAG search on past data. Choose only either 285,306 or 447,688 or 558,916 for the sake of this MVP")
 
 # --- Session State Initialization ---
-# Moved initialization to appear before first use
+# Ensure these are initialized early
 if 'company_id_loaded' not in st.session_state:
     st.session_state['company_id_loaded'] = None
 if 'general_company_context_string' not in st.session_state:
-    st.session_state['general_company_context_string'] = "" # This holds the formatted *initial* context
+    st.session_state['general_company_context_string'] = ""
 if 'messages_display' not in st.session_state:
-    # Messages for display in the chat UI (recent history for conversational flow)
     st.session_state['messages_display'] = []
 if 'raw_general_context_data' not in st.session_state:
     st.session_state['raw_general_context_data'] = None
@@ -516,25 +626,29 @@ if st.session_state['company_id_loaded'] is None:
     st.subheader("Load Company Context")
     input_company_id = st.text_input("Enter Company ID:", key="company_id_input")
 
-    if st.button("Load Context"):
-        if input_company_id:
-            with st.spinner(f"Loading general context for Company ID: {input_company_id}..."):
-                raw_data = get_general_company_context(input_company_id)
-                if raw_data:
-                    st.session_state['raw_general_context_data'] = raw_data # Store raw data
-                    st.session_state['general_company_context_string'] = format_general_company_context_for_llm(raw_data)
-                    st.session_state['company_id_loaded'] = input_company_id
-                    st.session_state['messages_display'] = [] # Clear display messages for the new company
-                    st.success(f"General context loaded for Company ID: {input_company_id}")
-                    # Note: RAG snippets are NOT loaded here, they are retrieved PER QUERY
-                    # st.rerun() # Rerun to transition to chat view - optional but clean
-                else:
-                    st.error(f"Could not load general context for Company ID: {input_company_id}. Please check the ID or database connection.")
-        else:
-            st.warning("Please enter a Company ID.")
+    # Only show the load button if the database connection is available
+    if conn is not None:
+        if st.button("Load Context"):
+            if input_company_id:
+                with st.spinner(f"Loading general context for Company ID: {input_company_id}..."):
+                    raw_data = get_general_company_context(input_company_id)
+                    if raw_data:
+                        st.session_state['raw_general_context_data'] = raw_data
+                        st.session_state['general_company_context_string'] = format_general_company_context_for_llm(raw_data)
+                        st.session_state['company_id_loaded'] = input_company_id
+                        st.session_state['messages_display'] = []
+                        st.success(f"General context loaded for Company ID: {input_company_id}")
+                        st.rerun() # Rerun to transition to chat view
+                    else:
+                        st.error(f"Could not load general context for Company ID: {input_company_id}. Please check the ID or database connection.")
+            else:
+                st.warning("Please enter a Company ID.")
+    else:
+        st.warning("Database connection not available. Cannot load company context.")
 
-# --- Chat Interface (shown only after company_id is loaded) ---
-if st.session_state['company_id_loaded']:
+
+# --- Chat Interface (shown only after company_id is loaded and models are ready) ---
+if st.session_state['company_id_loaded'] and chat_model is not None and embedding_model is not None and conn is not None:
     current_company_id = st.session_state['company_id_loaded']
     st.subheader(f"Chat for Company ID: {current_company_id} (Database RAG Enabled)")
 
@@ -546,7 +660,6 @@ if st.session_state['company_id_loaded']:
              st.info("No general context data available in session state.")
 
     # Display chat messages from history (these are just for display)
-    # The *actual* historical messages used by the LLM for RAG are retrieved dynamically
     for message in st.session_state['messages_display']:
          with st.chat_message(message["role"]):
             st.markdown(message["content"])
@@ -561,9 +674,6 @@ if st.session_state['company_id_loaded']:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Commented out logging user message to DB as requested
-        # log_message(current_company_id, "user", prompt)
-
         # --- RAG Step: Generate query embedding and Retrieve relevant snippets ---
         with st.spinner("Generating query embedding and retrieving relevant data..."):
             query_embedding = generate_embedding_sync(prompt)
@@ -571,8 +681,10 @@ if st.session_state['company_id_loaded']:
             if query_embedding is None:
                  st.error("Failed to generate embedding for your query. Cannot perform RAG.")
                  # Decide how to handle this - stop, or proceed without RAG?
-                 # For now, let's stop this turn.
-                 st.stop()
+                 # For now, let's just stop this turn and prevent LLM call.
+                 st.session_state.messages_display[-1]['content'] += "\n\n*Error: Failed to generate query embedding.*"
+                 st.experimental_rerun() # Rerun to show the error message
+
 
             # Retrieve relevant snippets from multiple sources using the query embedding
             relevant_snippets = retrieve_relevant_snippets_rag(current_company_id, query_embedding, limit=RETRIEVAL_LIMIT)
@@ -585,18 +697,6 @@ if st.session_state['company_id_loaded']:
 
 
         # --- Prepare the full prompt for the LLM ---
-        # This includes:
-        # 1. System Instructions
-        # 2. General Company Context (loaded upfront)
-        # 3. Retrieved Relevant Snippets (via RAG for the current query)
-        # 4. Recent Chat History (from the *current* display session state)
-        # 5. Current Agent's Question
-
-        # Get recent chat history from session state for conversational flow
-        # Limit history to avoid exceeding context window
-        # Adjust the number of turns based on LLM context window and total context size
-        recent_chat_history_for_llm = st.session_state['messages_display'][-6:] # Example: last 6 turns (user+model pairs)
-
         llm_prompt_text = f"""
 You are an AI assistant for an accounting firm, providing context and answering questions about client companies.
 Use the provided General Company Context, the Relevant Past Information found via RAG, and the recent Chat History to answer the agent's question.
@@ -609,7 +709,8 @@ Do not use external knowledge.
 {formatted_relevant_snippets}
 
 --- Recent Chat History ---
-{''.join([f'{m["role"].capitalize()}: {m["content"]}\n' for m in recent_chat_history_for_llm])}
+{''.join([f'{m["role"].capitalize()}: {m["content"]}\n' for m in st.session_state['messages_display'][-6:]])} # Use last 6 turns from display history
+
 
 ---
 
@@ -617,40 +718,62 @@ Agent's Question: {prompt}
 """
 
         with st.spinner("Generating response..."):
-            # Send the full prompt to the LLM
-            # Using generate_content with the full prompt string
-            try:
-                response = chat_model.generate_content(llm_prompt_text, stream=True)
+            # Using st.chat_message("assistant") and a placeholder for streaming
+            with st.chat_message("assistant"):
+                 message_placeholder = st.empty() # Create an empty placeholder for the response
+                 full_response_text = ""
+                 try:
+                     response = chat_model.generate_content(llm_prompt_text, stream=True)
 
-                # Define a generator function to yield only the text parts from chunks
-                def text_chunk_generator(stream):
-                    """Yields text from stream chunks, handling potential errors."""
-                    for chunk in stream:
-                        try:
-                            if hasattr(chunk, 'text'):
-                                yield chunk.text
-                        except Exception as e:
-                            # Handle cases where a chunk might not have text or is malformed
-                            print(f"Error processing chunk: {e}") # Log error to console
-                            pass
+                     # Stream the response into the placeholder
+                     for chunk in response:
+                         try:
+                             if hasattr(chunk, 'text'):
+                                 full_response_text += chunk.text
+                                 message_placeholder.markdown(full_response_text + "▌") # Add cursor effect
+                         except Exception as chunk_e:
+                             print(f"Error processing chunk: {chunk_e}")
+                             # Decide how to handle chunk errors - log, show partial response?
+                             pass # Skip malformed chunks
 
-                # Use st.write_stream with the text-only generator
-                full_response_text = st.write_stream(text_chunk_generator(response))
+                     message_placeholder.markdown(full_response_text) # Display final text without cursor
 
-            except Exception as e:
-                error_message = f"An error occurred during LLM generation: {e}"
-                st.error(error_message)
-                full_response_text = error_message # Store error as the response for logging/history
-                # Ensure the error is displayed if st.write_stream failed
-                message_placeholder.markdown(error_message)
+                 except Exception as e:
+                     error_message = f"An error occurred during LLM generation: {e}"
+                     st.error(error_message)
+                     full_response_text = error_message # Store error as the response
+                     message_placeholder.markdown(error_message) # Ensure error is displayed
 
 
-        # 3. Add assistant response (full text) to chat history and log it
-        # Commented out logging assistant message to DB as requested
-        # timestamp_assistant = datetime.datetime.now().isoformat()
-        # log_message(current_company_id, "model", full_response_text)
-        # Add the full response text to the display history
+        # Add assistant response (full text) to chat history
         st.session_state.messages_display.append({"role": "assistant", "content": full_response_text})
 
-    # (Optional) Rerun if needed, though Streamlit usually handles reruns on widget interaction
-    # st.rerun()
+
+# --- Display status messages if components are not ready ---
+if conn is None:
+    st.warning("Waiting for database connection (check Cloud SQL Proxy status).")
+if chat_model is None:
+     st.warning("Waiting for chat model to initialize.")
+if embedding_model is None:
+     st.warning("Waiting for embedding model to initialize.")
+
+# --- Optional: Proxy Status Display ---
+# Add a small section to show proxy status for debugging
+st.sidebar.subheader("Cloud SQL Proxy Status")
+if st.session_state.get('cloudsql_proxy_process') is not None:
+    process = st.session_state['cloudsql_proxy_process']
+    if process.poll() is None:
+        st.sidebar.success(f"Proxy Running (PID: {process.pid})")
+        # Optional: Display last few lines of stderr for running process
+        # This is tricky with Popen. You'd need to read non-blocking or periodically.
+        # stderr_output = process.stderr.peek().decode() # peek might not be universally available or work as expected
+        # st.sidebar.text("Recent STDERR:")
+        # st.sidebar.text(stderr_output[-500:]) # Show last 500 chars
+    else:
+        st.sidebar.error(f"Proxy Exited (Return code: {process.returncode})")
+        st.sidebar.text("Check logs above for details.")
+        # Display captured output if available (this was already done on error)
+else:
+    st.sidebar.warning("Proxy process not started.")
+
+st.sidebar.text(f"Temp key path: {st.session_state.get('cloudsql_temp_key_path', 'Not created')}")
