@@ -110,7 +110,7 @@ def start_cloudsql_proxy():
 
     command = [
         proxy_executable,
-        f"-instances={PG_INSTANCE_CONNECTION_NAME}=tcp:127.0.0.1:{PG_PORT}",
+        f"--instances={PG_INSTANCE_CONNECTION_NAME}=tcp:127.0.0.1:{PG_PORT}",
         "-enable_iam_login",
         "-verbose",
     ]
