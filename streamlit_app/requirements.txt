@@ -1,7 +1,8 @@
 streamlit
+psycopg2
 google-generativeai
-pandas
+numpy
+textwrap
 datetime
 os
-time
-csv
+textwrap
