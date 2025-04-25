@@ -6,6 +6,7 @@ import numpy as np
 import textwrap
 import datetime
 import os
+import tempfile
 import time # Used for potential delays if needed
 
 # --- Google Cloud Authentication (using JSON key from secret) ---
