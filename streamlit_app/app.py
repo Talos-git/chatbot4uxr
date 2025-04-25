@@ -13,43 +13,6 @@ import time # Used for potential delays if needed
 # This must be the first Streamlit command
 st.set_page_config(page_title="Agent Context Summarizer (DB RAG)", layout="wide")
 
-# --- Google Cloud Authentication (using JSON key from secret) ---
-if "GCP_CREDENTIALS_JSON" in st.secrets:
-    try:
-        gcp_credentials_json_content = st.secrets["GCP_CREDENTIALS_JSON"]
-        # Using a more robust way to ensure the file is closed/flushed immediately
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as tmp_file:
-             tmp_file.write(gcp_credentials_json_content)
-             temp_file_path = tmp_file.name
-        # Ensure content is flushed and file handle is closed before setting env var and using it
-        print(f"Temporary credential file created at: {temp_file_path}") # Log file path
-
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp_file_path
-        print(f"GOOGLE_APPLICATION_CREDENTIALS env var set to: {os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')}") # Verify env var
-
-        # Add a check to see if the file exists and is readable (optional but good for debugging /tmp)
-        if os.path.exists(temp_file_path):
-             print(f"Temporary credential file exists.")
-             try:
-                 with open(temp_file_path, 'r') as f:
-                     content_preview = f.read(100) # Read first 100 chars to check
-                     print(f"Temporary credential file readable. Content starts with: {content_preview}...")
-             except Exception as file_read_error:
-                  print(f"ERROR: Could not read temporary credential file: {file_read_error}")
-        else:
-             print(f"ERROR: Temporary credential file does NOT exist after creation attempt.")
-
-
-    except Exception as e:
-        st.error(f"Error setting up Google Cloud credentials from secret: {e}")
-        st.exception("Detailed traceback during credential file setup:") # Print traceback
-        print(f"ERROR: Detailed traceback during credential file setup: {e}") # Print to logs
-        st.stop()
-else:
-    print("GCP_CREDENTIALS_JSON secret not found.")
-    st.warning("Google Cloud credentials secret is not set.")
-
-
 # Import Vertex AI libraries for embedding
 import vertexai
 from vertexai.language_models import TextEmbeddingModel
@@ -68,6 +31,7 @@ PG_USER = st.secrets["postgres"]["user"]
 PG_PASSWORD = st.secrets["postgres"]["password"]
 PG_PORT = st.secrets["postgres"]["port"]
 
+
 # LLM Configuration (for chat response)
 # Using gemini-1.5-flash-latest for chat
 LLM_MODEL_NAME = 'gemini-2.0-flash'
@@ -75,7 +39,7 @@ LLM_MODEL_NAME = 'gemini-2.0-flash'
 # Embedding Model Configuration (using Vertex AI)
 EMBEDDING_MODEL_NAME = "text-embedding-005" # Use the model from your script
 EMBEDDING_DIMENSION = 768 # Dimension for this model
-RETRIEVAL_LIMIT = 10 # Number of relevant snippets to retrieve from EACH source (messages, notes, tickets)
+RETRIEVAL_LIMIT = 50 # Number of relevant snippets to retrieve from EACH source (messages, notes, tickets)
 
 # --- Initialize Vertex AI and Embedding Model (cached) ---
 @st.cache_resource
