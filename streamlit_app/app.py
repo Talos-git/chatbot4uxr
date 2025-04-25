@@ -9,7 +9,6 @@ import os
 import tempfile
 import time # Used for potential delays if needed
 from google.oauth2 import service_account
-import json
 
 # --- Streamlit Page Configuration ---
 # This must be the first Streamlit command
@@ -23,8 +22,7 @@ from vertexai.language_models import TextEmbeddingModel
 from pgvector.psycopg2 import register_vector # Import the registration function
 
 # Load the SA JSON from Streamlit secrets
-sa_info = json.loads(st.secrets["gcp"]["service_account"])
-creds = service_account.Credentials.from_service_account_info(sa_info)
+creds = service_account.Credentials.from_service_account_info(st.secrets["gcp"])
 
 # --- Configuration ---
 # Access secrets from .streamlit/secrets.toml
@@ -36,7 +34,6 @@ PG_DATABASE = st.secrets["postgres"]["database"]
 PG_USER = st.secrets["postgres"]["user"]
 PG_PASSWORD = st.secrets["postgres"]["password"]
 PG_PORT = st.secrets["postgres"]["port"]
-
 
 # LLM Configuration (for chat response)
 # Using gemini-1.5-flash-latest for chat
