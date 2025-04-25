@@ -111,8 +111,7 @@ def start_cloudsql_proxy():
     command = [
         proxy_executable,
         f"--credentials-file={temp_key_file_path}", # Use the temporary file
-        PG_INSTANCE_CONNECTION_NAME, # Use the instance connection name from secrets
-        f"--port={PG_PORT}", # Specify the port (defaults to 5432 but good to be explicit)
+        f"--instances={PG_INSTANCE_CONNECTION_NAME}=tcp:{PG_PORT}",
         # Consider adding --quiet if you don't want proxy logs in app logs,
         # but seeing logs can be useful for debugging connection issues.
         # Add --private-ip if your Cloud SQL instance has one and you want to use it
