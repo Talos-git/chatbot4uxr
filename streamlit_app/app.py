@@ -9,6 +9,10 @@ import os
 import tempfile
 import time # Used for potential delays if needed
 
+# --- Streamlit Page Configuration ---
+# This must be the first Streamlit command
+st.set_page_config(page_title="Agent Context Summarizer (DB RAG)", layout="wide")
+
 # --- Google Cloud Authentication (using JSON key from secret) ---
 if "GCP_CREDENTIALS_JSON" in st.secrets:
     try:
@@ -52,11 +56,6 @@ from vertexai.language_models import TextEmbeddingModel
 
 # Import pgvector for psycopg2 type handling
 from pgvector.psycopg2 import register_vector # Import the registration function
-
-# --- Streamlit Page Configuration ---
-# This must be the first Streamlit command
-st.set_page_config(page_title="Agent Context Summarizer (DB RAG)", layout="wide")
-
 
 # --- Configuration ---
 # Access secrets from .streamlit/secrets.toml
