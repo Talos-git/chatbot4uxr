@@ -109,7 +109,7 @@ def cleanup_cloudsql_proxy():
 atexit.register(cleanup_cloudsql_proxy)
 
 
-def start_cloudsql_proxy(sa_info):
+def start_cloudsql_proxy(sa_info_attrdict):
     """Starts the Cloud SQL Auth Proxy as a subprocess."""
     # Check if proxy is already running based on session state
     if st.session_state.get('cloudsql_proxy_process') is not None:
@@ -124,10 +124,11 @@ def start_cloudsql_proxy(sa_info):
 
     # --- 1. Save Service Account key info to a temporary file ---
     try:
+        sa_info_dict = dict(sa_info_attrdict)
         # Use mkstemp for better security than NamedTemporaryFile(delete=False)
         fd, temp_key_file_path = tempfile.mkstemp(suffix=".json", text=True)
         with os.fdopen(fd, 'w') as tmp:
-             json.dump(sa_info, tmp)
+             json.dump(sa_info_dict, tmp)
 
         st.session_state['cloudsql_temp_key_path'] = temp_key_file_path
         print(f"Service account key saved to temporary file: {temp_key_file_path}")
