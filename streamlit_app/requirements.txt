@@ -1,3 +1,7 @@
 streamlit
 google-generativeai
 pandas
+datetime
+os
+time
+csv
