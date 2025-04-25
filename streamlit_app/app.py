@@ -110,8 +110,11 @@ def start_cloudsql_proxy():
 
     command = [
         proxy_executable,
-        f"--instances={PG_INSTANCE_CONNECTION_NAME}=tcp:127.0.0.1:{PG_PORT}",
-        "-enable_iam_login",
+        # Specify the instance connection string directly as an argument
+        f"{PG_INSTANCE_CONNECTION_NAME}=tcp:127.0.0.1:{PG_PORT}",
+        # Use the correct flag for IAM login from the help output
+        "--auto-iam-authn",
+        # Keep verbose if desired
         "-verbose",
     ]
     print(f"Cloud SQL Auth Proxy command: {' '.join(command)}") # Log the command being run
