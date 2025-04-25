@@ -9,6 +9,7 @@ import os
 import tempfile
 import time # Used for potential delays if needed
 import subprocess
+import sys
 from google.oauth2 import service_account
 
 # --- Streamlit Page Configuration ---
@@ -131,7 +132,7 @@ def start_cloudsql_proxy():
         print("Cloud SQL Auth Proxy subprocess started.")
 
         # Give the proxy a moment to start up
-        time.sleep(2) # Adjust sleep time if needed
+        time.sleep(10) # Adjust sleep time if needed
 
         # Check if the process is still running (0 means running, None means terminated)
         if process.poll() is not None:
