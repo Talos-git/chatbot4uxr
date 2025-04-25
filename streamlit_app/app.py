@@ -69,7 +69,7 @@ def start_cloudsql_proxy():
 
         # Create a temporary file to store the key securely
         # delete=False means we are responsible for deleting it
-        temp_key_file = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+        temp_key_file = tempfile.NamedTemporaryFile(delete=False, suffix=".json", mode='w+')
         temp_key_file_path = temp_key_file.name
         # Write the JSON content to the temporary file
         import json
