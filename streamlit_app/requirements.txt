@@ -2,4 +2,6 @@ streamlit
 psycopg2-binary  # Use the binary version for easier installation
 google-generativeai
 numpy
+google-cloud-aiplatform
+pgvector
 # Removed built-in modules: textwrap, datetime, os
