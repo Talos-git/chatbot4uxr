@@ -13,6 +13,7 @@ import sys
 import json
 import atexit
 from google.oauth2 import service_account
+import shlex
 
 # Import Vertex AI libraries for embedding
 import vertexai
@@ -167,6 +168,41 @@ def start_cloudsql_proxy(sa_info_attrdict):
         f"--credentials-file={st.session_state['cloudsql_temp_key_path']}",
         # "-verbose", # Optional: Uncomment for more proxy logging
     ]
+
+    # --- Add this block within start_cloudsql_proxy ---
+    # Attempt to kill any lingering proxy processes for this specific instance and port
+    print(f"Attempting to kill any existing proxy processes using port {PG_PORT}...")
+    try:
+        # Construct a pkill command targeting the specific proxy instance and port
+        # Uses -f to match against the full command line argument string
+        # Quotes are important for safety with shlex.quote
+        instance_name_quoted = shlex.quote(PG_INSTANCE_CONNECTION_NAME)
+        port_quoted = shlex.quote(str(PG_PORT))
+        # This pattern tries to be specific to avoid killing unrelated processes
+        pkill_pattern = f"cloud-sql-proxy.*{instance_name_quoted}.*--port {port_quoted}"
+        pkill_command = ["pkill", "-f", pkill_pattern]
+
+        print(f"Running cleanup command: {' '.join(pkill_command)}")
+        # Run pkill. We don't check=True because it's okay if no process was found (it returns non-zero).
+        kill_result = subprocess.run(pkill_command, capture_output=True, text=True, check=False)
+
+        if kill_result.returncode == 0:
+            print(f"Successfully sent kill signal to matching processes.")
+        elif "no process found" in kill_result.stderr.lower() or kill_result.returncode == 1:
+            print("No lingering proxy processes found matching the pattern.")
+        else:
+            # Log if pkill failed for other reasons, but proceed anyway
+            print(f"Warning: pkill command exited with code {kill_result.returncode}. Stderr: {kill_result.stderr.strip()}")
+
+        # Give the OS a moment to release the port after killing
+        time.sleep(1) # Sleep for 1 second
+
+    except FileNotFoundError:
+        print("Warning: 'pkill' command not found. Cannot perform automatic cleanup of lingering processes.")
+    except Exception as kill_e:
+        print(f"An error occurred during the proxy cleanup attempt: {kill_e}")
+    # --- End of added block ---
+
     print(f"Cloud SQL Auth Proxy command: {' '.join(command)}") # Log the command being run
 
     # --- 3. Start the subprocess ---
