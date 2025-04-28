@@ -340,10 +340,10 @@ if chat_model is None:
 # Use st.cache_resource to cache the connection to reuse it across interactions
 # Hash the important connection parameters so a change triggers recaching
 # FIX: Prefix the unhashable argument `conn_params` with an underscore
-@st.cache_resource(hash_funcs={
-    type(st.session_state): lambda _: None, # Don't hash the whole session state
-    subprocess.Popen: lambda _: None # Don't hash the process object
-    }, show_spinner="Connecting to database...")
+# @st.cache_resource(hash_funcs={
+#     type(st.session_state): lambda _: None, # Don't hash the whole session state
+#     subprocess.Popen: lambda _: None # Don't hash the process object
+#     }, show_spinner="Connecting to database...")
 def get_db_connection(_conn_params):
     """Establishes and returns a database connection."""
     # Ensure proxy is running before attempting connection
