@@ -520,12 +520,19 @@ def retrieve_relevant_snippets_rag(company_id, query_embedding, limit=RETRIEVAL_
     retrieved_snippets = []
 
     # Ensure company_id is treated as a string for database queries
-    company_id_str = str(company_id)
+    # Create a version of the company_id without the comma for past_messages query
+    # Assumes the input company_id string might contain a comma
+    company_id_for_past_messages = company_id.replace(',', '')
+
+    # Use the original company_id (which might contain a comma) for notes and tickets query
+    # Assumes notes and tickets tables store companyId with the comma
+    company_id_for_notes_tickets = company_id # Use the original input value
+
 
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
             # --- Retrieve from past_messages ---
-            print(f"Querying past_messages for companyId: '{company_id_str}'")
+            print(f"Querying past_messages for companyId: '{company_id_for_past_messages}'")
             cur.execute(
                 """
                 SELECT id, "createdAt", message_from_who, text
@@ -534,11 +541,11 @@ def retrieve_relevant_snippets_rag(company_id, query_embedding, limit=RETRIEVAL_
                 ORDER BY embedding <=> %s::vector
                 LIMIT %s;
                 """,
-                (company_id_str, query_embedding, limit)
+                (company_id_for_past_messages, query_embedding, limit)
             )
             messages_snippets = cur.fetchall()
-            logging.info(f"Retrieved {len(messages_snippets)} past messages for company {company_id_str}")
-            print(f"Retrieved {len(messages_snippets)} past messages for company {company_id_str}")
+            logging.info(f"Retrieved {len(messages_snippets)} past messages for company {company_id_for_past_messages}")
+            print(f"Retrieved {len(messages_snippets)} past messages for company {company_id_for_past_messages}")
             for snippet in messages_snippets:
                  retrieved_snippets.append({
                      'source': 'past_message',
@@ -549,7 +556,7 @@ def retrieve_relevant_snippets_rag(company_id, query_embedding, limit=RETRIEVAL_
                  })
 
             # --- Retrieve from notes ---
-            print(f"Querying notes for companyId: '{company_id_str}'")
+            print(f"Querying notes for companyId: '{company_id_for_notes_tickets}'")
             cur.execute(
                 """
                 SELECT id, "createdAt", "lastModifiedByUserId", text
@@ -558,11 +565,11 @@ def retrieve_relevant_snippets_rag(company_id, query_embedding, limit=RETRIEVAL_
                 ORDER BY embedding <=> %s::vector
                 LIMIT %s;
                 """,
-                (company_id_str, query_embedding, limit)
+                (company_id_for_notes_tickets, query_embedding, limit)
             )
             notes_snippets = cur.fetchall()
-            logging.info(f"Retrieved {len(notes_snippets)} notes for company {company_id_str}")
-            print(f"Retrieved {len(notes_snippets)} notes for company {company_id_str}")
+            logging.info(f"Retrieved {len(notes_snippets)} notes for company {company_id_for_notes_tickets}")
+            print(f"Retrieved {len(notes_snippets)} notes for company {company_id_for_notes_tickets}")
             for snippet in notes_snippets:
                  retrieved_snippets.append({
                      'source': 'note',
@@ -573,7 +580,7 @@ def retrieve_relevant_snippets_rag(company_id, query_embedding, limit=RETRIEVAL_
                  })
 
             # --- Retrieve from tickets ---
-            print(f"Querying tickets for companyId: '{company_id_str}'")
+            print(f"Querying tickets for companyId: '{company_id_for_notes_tickets}'")
             cur.execute(
                 """
                 SELECT id, "createdAt", name, status, "businessLine"
@@ -582,11 +589,11 @@ def retrieve_relevant_snippets_rag(company_id, query_embedding, limit=RETRIEVAL_
                 ORDER BY name_embedding <=> %s::vector
                 LIMIT %s;
                 """,
-                (company_id_str, query_embedding, limit)
+                (company_id_for_notes_tickets, query_embedding, limit)
             )
             tickets_snippets = cur.fetchall()
-            logging.info(f"Retrieved {len(tickets_snippets)} tickets for company {company_id_str}")
-            print(f"Retrieved {len(tickets_snippets)} tickets for company {company_id_str}")
+            logging.info(f"Retrieved {len(tickets_snippets)} tickets for company {company_id_for_notes_tickets}")
+            print(f"Retrieved {len(tickets_snippets)} tickets for company {company_id_for_notes_tickets}")
             for snippet in tickets_snippets:
                  retrieved_snippets.append({
                      'source': 'ticket',
@@ -609,7 +616,7 @@ def retrieve_relevant_snippets_rag(company_id, query_embedding, limit=RETRIEVAL_
         if conn is None:
              st.info("Database connection is not available for RAG retrieval.")
         st.info("Please ensure:")
-        st.info(f"- The company ID '{company_id_str}' exists in your database tables.")
+        st.info(f"- The company ID '{company_id}' exists in your database tables.")
         st.info("- Tables ('past_messages', 'notes', 'tickets') have non-NULL embedding columns.")
         st.info("- Column names in your tables match the queries.")
         return []
