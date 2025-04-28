@@ -208,7 +208,7 @@ def start_cloudsql_proxy(sa_info_attrdict):
             logging.warning(f"pkill command exited with code {kill_result.returncode}. Stderr: {kill_result.stderr.strip()}") # Use logging.warning
 
         # Give the OS a moment to release the port after killing
-        time.sleep(15) # Sleep for 1 second
+        time.sleep(10) # Sleep for 1 second
 
     except FileNotFoundError:
         print("Warning: 'pkill' command not found. Cannot perform automatic cleanup of lingering processes.")
