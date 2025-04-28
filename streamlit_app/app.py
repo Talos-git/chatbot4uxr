@@ -537,6 +537,7 @@ def retrieve_relevant_snippets_rag(company_id, query_embedding, limit=RETRIEVAL_
                 (company_id_str, query_embedding, limit)
             )
             messages_snippets = cur.fetchall()
+            logging.info(f"Retrieved {len(messages_snippets)} past messages for company {company_id_str}")
             print(f"Retrieved {len(messages_snippets)} past messages for company {company_id_str}")
             for snippet in messages_snippets:
                  retrieved_snippets.append({
@@ -560,6 +561,7 @@ def retrieve_relevant_snippets_rag(company_id, query_embedding, limit=RETRIEVAL_
                 (company_id_str, query_embedding, limit)
             )
             notes_snippets = cur.fetchall()
+            logging.info(f"Retrieved {len(notes_snippets)} notes for company {company_id_str}")
             print(f"Retrieved {len(notes_snippets)} notes for company {company_id_str}")
             for snippet in notes_snippets:
                  retrieved_snippets.append({
@@ -583,6 +585,7 @@ def retrieve_relevant_snippets_rag(company_id, query_embedding, limit=RETRIEVAL_
                 (company_id_str, query_embedding, limit)
             )
             tickets_snippets = cur.fetchall()
+            logging.info(f"Retrieved {len(tickets_snippets)} tickets for company {company_id_str}")
             print(f"Retrieved {len(tickets_snippets)} tickets for company {company_id_str}")
             for snippet in tickets_snippets:
                  retrieved_snippets.append({
