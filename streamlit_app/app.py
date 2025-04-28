@@ -112,7 +112,7 @@ def cleanup_cloudsql_proxy():
     print("Cloud SQL Proxy cleanup finished.")
 
 # Register the cleanup function to run when the script exits
-atexit.register(cleanup_cloudsql_proxy)
+# atexit.register(cleanup_cloudsql_proxy)
 
 
 def start_cloudsql_proxy(sa_info_attrdict):
@@ -174,51 +174,51 @@ def start_cloudsql_proxy(sa_info_attrdict):
         # "-verbose", # Optional: Uncomment for more proxy logging
     ]
 
-    # # --- Add this block within start_cloudsql_proxy ---
-    # # Attempt to kill any lingering proxy processes for this specific instance and port
-    # print(f"Attempting to kill any existing proxy processes using port {PG_PORT}...")
-    # logging.info("Attempting to kill any existing proxy processes...") # Use logging
-    # try:
-    #     # Construct a pkill command targeting the specific proxy instance and port
-    #     # Uses -f to match against the full command line argument string
-    #     # Quotes are important for safety with shlex.quote
-    #     instance_name_quoted = shlex.quote(PG_INSTANCE_CONNECTION_NAME)
-    #     port_quoted = shlex.quote(str(PG_PORT))
-    #     # This pattern tries to be specific to avoid killing unrelated processes
-    #     pkill_pattern = f"cloud-sql-proxy.*{instance_name_quoted}.*--port {port_quoted}"
-    #     pkill_command = ["pkill", "-f", pkill_pattern]
+    # --- Add this block within start_cloudsql_proxy ---
+    # Attempt to kill any lingering proxy processes for this specific instance and port
+    print(f"Attempting to kill any existing proxy processes using port {PG_PORT}...")
+    logging.info("Attempting to kill any existing proxy processes...") # Use logging
+    try:
+        # Construct a pkill command targeting the specific proxy instance and port
+        # Uses -f to match against the full command line argument string
+        # Quotes are important for safety with shlex.quote
+        instance_name_quoted = shlex.quote(PG_INSTANCE_CONNECTION_NAME)
+        port_quoted = shlex.quote(str(PG_PORT))
+        # This pattern tries to be specific to avoid killing unrelated processes
+        pkill_pattern = f"cloud-sql-proxy.*{instance_name_quoted}.*--port {port_quoted}"
+        pkill_command = ["pkill", "-f", pkill_pattern]
 
-    #     print(f"Running cleanup command: {' '.join(pkill_command)}")
-    #     # Run pkill. We don't check=True because it's okay if no process was found (it returns non-zero).
-    #     logging.info(f"Running cleanup command: {' '.join(pkill_command)}") # Use logging
-    #     kill_result = subprocess.run(pkill_command, capture_output=True, text=True, check=False)
-    #     logging.info(f"pkill finished. Return Code: {kill_result.returncode}") # Use logging
-    #     logging.info(f"pkill STDOUT: {kill_result.stdout.strip()}")          # Use logging
-    #     logging.error(f"pkill STDERR: {kill_result.stderr.strip()}")         # Use logging.error for errors
+        print(f"Running cleanup command: {' '.join(pkill_command)}")
+        # Run pkill. We don't check=True because it's okay if no process was found (it returns non-zero).
+        logging.info(f"Running cleanup command: {' '.join(pkill_command)}") # Use logging
+        kill_result = subprocess.run(pkill_command, capture_output=True, text=True, check=False)
+        logging.info(f"pkill finished. Return Code: {kill_result.returncode}") # Use logging
+        logging.info(f"pkill STDOUT: {kill_result.stdout.strip()}")          # Use logging
+        logging.error(f"pkill STDERR: {kill_result.stderr.strip()}")         # Use logging.error for errors
 
-    #     if kill_result.returncode == 0:
-    #         logging.info("Successfully sent kill signal to matching processes.")
-    #         print(f"Successfully sent kill signal to matching processes.")
-    #     elif "no process found" in kill_result.stderr.lower() or kill_result.returncode == 1:
-    #         logging.info("No lingering proxy processes found matching the pattern.")
-    #         print("No lingering proxy processes found matching the pattern.")
-    #     else:
-    #         # Log if pkill failed for other reasons, but proceed anyway
-    #         print(f"Warning: pkill command exited with code {kill_result.returncode}. Stderr: {kill_result.stderr.strip()}")
-    #         logging.warning(f"pkill command exited with code {kill_result.returncode}. Stderr: {kill_result.stderr.strip()}") # Use logging.warning
+        if kill_result.returncode == 0:
+            logging.info("Successfully sent kill signal to matching processes.")
+            print(f"Successfully sent kill signal to matching processes.")
+        elif "no process found" in kill_result.stderr.lower() or kill_result.returncode == 1:
+            logging.info("No lingering proxy processes found matching the pattern.")
+            print("No lingering proxy processes found matching the pattern.")
+        else:
+            # Log if pkill failed for other reasons, but proceed anyway
+            print(f"Warning: pkill command exited with code {kill_result.returncode}. Stderr: {kill_result.stderr.strip()}")
+            logging.warning(f"pkill command exited with code {kill_result.returncode}. Stderr: {kill_result.stderr.strip()}") # Use logging.warning
 
-    #     # Give the OS a moment to release the port after killing
-    #     time.sleep(10) # Sleep for 1 second
+        # Give the OS a moment to release the port after killing
+        time.sleep(15) # Sleep for 1 second
 
-    # except FileNotFoundError:
-    #     print("Warning: 'pkill' command not found. Cannot perform automatic cleanup of lingering processes.")
-    #     logging.error("'pkill' command not found. Cannot perform automatic cleanup.") # Use logging
-    # except Exception as kill_e:
-    #     print(f"An error occurred during the proxy cleanup attempt: {kill_e}")
-    #     logging.error(f"An error occurred during the proxy cleanup attempt: {kill_e}") # Use logging
-    # # --- End of added block ---
+    except FileNotFoundError:
+        print("Warning: 'pkill' command not found. Cannot perform automatic cleanup of lingering processes.")
+        logging.error("'pkill' command not found. Cannot perform automatic cleanup.") # Use logging
+    except Exception as kill_e:
+        print(f"An error occurred during the proxy cleanup attempt: {kill_e}")
+        logging.error(f"An error occurred during the proxy cleanup attempt: {kill_e}") # Use logging
+    # --- End of added block ---
 
-    # print(f"Cloud SQL Auth Proxy command: {' '.join(command)}") # Log the command being run
+    print(f"Cloud SQL Auth Proxy command: {' '.join(command)}") # Log the command being run
 
     # --- 3. Start the subprocess ---
     # Use subprocess.Popen to run in the background
