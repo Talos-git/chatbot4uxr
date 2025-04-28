@@ -107,7 +107,7 @@ def cleanup_cloudsql_proxy():
     print("Cloud SQL Proxy cleanup finished.")
 
 # Register the cleanup function to run when the script exits
-atexit.register(cleanup_cloudsql_proxy)
+# atexit.register(cleanup_cloudsql_proxy)
 
 
 def start_cloudsql_proxy(sa_info_attrdict):
