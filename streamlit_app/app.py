@@ -271,8 +271,34 @@ def start_cloudsql_proxy(sa_info_attrdict):
 # --- Call the function to start the proxy early in your script ---
 # Pass the SA info dictionary to the startup function
 # This ensures it runs when the app container starts or reruns without a cached proxy
-if st.session_state['cloudsql_proxy_process'] is None:
-     start_cloudsql_proxy(gcp_service_account_info)
+#if st.session_state['cloudsql_proxy_process'] is None:
+#     start_cloudsql_proxy(gcp_service_account_info)
+proxy_process_in_state = st.session_state.get('cloudsql_proxy_process')
+proxy_needs_restart = False
+
+if proxy_process_in_state is None:
+    print("Proxy process not found in session state. Will attempt to start.")
+    logging.info("Proxy process not found in session state. Will attempt to start.")
+    proxy_needs_restart = True
+elif proxy_process_in_state.poll() is not None:
+    # The process object exists, but the process it points to has terminated.
+    print(f"Detected terminated proxy (PID: {proxy_process_in_state.pid}, Code: {proxy_process_in_state.poll()}) during rerun check. Will attempt restart.")
+    logging.warning(f"Detected terminated proxy (PID: {proxy_process_in_state.pid}, Code: {proxy_process_in_state.poll()}) during rerun check. Will attempt restart.")
+    # Explicitly clear the dead process object from state before restarting
+    st.session_state['cloudsql_proxy_process'] = None
+    # The start_cloudsql_proxy function contains the cleanup (pkill), so we just need to call it.
+    proxy_needs_restart = True
+else:
+    # Process object exists and poll() is None, meaning it's likely still running.
+    print(f"Proxy process (PID: {proxy_process_in_state.pid}) found in session state and appears to be running.")
+    logging.debug(f"Proxy process (PID: {proxy_process_in_state.pid}) found in session state and appears to be running.")
+    # No restart needed in this case.
+
+# Call start_cloudsql_proxy only if needed
+if proxy_needs_restart:
+    start_cloudsql_proxy(gcp_service_account_info) # This function includes the pkill logic
+
+# --- End of Improved Logic ---
 
 
 # --- Initialize Vertex AI and Embedding Model (cached) ---
