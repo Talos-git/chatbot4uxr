@@ -876,13 +876,13 @@ if st.session_state.get('cloudsql_proxy_process') is not None:
 else:
     st.sidebar.warning("Proxy process not started.")
 
-st.sidebar.text(f"Temp key path: {st.session_state.get('cloudsql_temp_key_path', 'Not created')}")
-st.sidebar.text(f"DB Host (App): {PG_HOST_APP}")
-st.sidebar.text(f"DB Port (App/Proxy): {PG_PORT}")
-st.sidebar.text(f"DB User: {PG_USER}")
-# st.sidebar.text(f"DB Password Provided: {'Yes' if 'password' in db_connection_params else 'No'}") # Safer check
-st.sidebar.text(f"DB Name: {PG_DATABASE}")
-st.sidebar.text(f"Proxy Instance CN: {PG_INSTANCE_CONNECTION_NAME}")
-st.sidebar.text(f"GCP Project: {GOOGLE_CLOUD_PROJECT}")
-st.sidebar.text(f"GCP Location: {GOOGLE_CLOUD_LOCATION}")
-st.sidebar.text(f"SA Email: {gcp_service_account_info.get('client_email', 'N/A')}")
+# st.sidebar.text(f"Temp key path: {st.session_state.get('cloudsql_temp_key_path', 'Not created')}")
+# st.sidebar.text(f"DB Host (App): {PG_HOST_APP}")
+# st.sidebar.text(f"DB Port (App/Proxy): {PG_PORT}")
+# st.sidebar.text(f"DB User: {PG_USER}")
+# # st.sidebar.text(f"DB Password Provided: {'Yes' if 'password' in db_connection_params else 'No'}") # Safer check
+# st.sidebar.text(f"DB Name: {PG_DATABASE}")
+# st.sidebar.text(f"Proxy Instance CN: {PG_INSTANCE_CONNECTION_NAME}")
+# st.sidebar.text(f"GCP Project: {GOOGLE_CLOUD_PROJECT}")
+# st.sidebar.text(f"GCP Location: {GOOGLE_CLOUD_LOCATION}")
+# st.sidebar.text(f"SA Email: {gcp_service_account_info.get('client_email', 'N/A')}")
